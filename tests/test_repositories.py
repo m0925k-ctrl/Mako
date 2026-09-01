@@ -1,6 +1,11 @@
-"""得意先リポジトリのバックエンド切り替え/フォールバックのテスト。"""
+"""リポジトリのバックエンド切り替え/フォールバックのテスト。"""
 import pytest
 
+from app.repositories.cases import (
+    ACCESS_COLMAP,
+    JsonCaseRepository,
+    get_case_repository,
+)
 from app.repositories.customers import (
     JsonCustomerRepository,
     OracleCustomerRepository,
@@ -48,3 +53,29 @@ def test_oracle_multi_value_split():
     assert split("A氏\nB氏") == ["A氏", "B氏"]
     assert split("X; Y ;Z") == ["X", "Y", "Z"]
     assert split(None) == []
+
+
+# ---- 受付ケースのバックエンド ------------------------------------------
+def test_case_default_backend_is_json(monkeypatch):
+    monkeypatch.delenv("MAKO_CASE_BACKEND", raising=False)
+    repo = get_case_repository()
+    assert isinstance(repo, JsonCaseRepository)
+    assert repo.get("CS-2025-100427")["error_code"] == "2104"
+    assert repo.find_by_error("2104")
+    assert len(repo.list_all()) >= 1
+
+
+def test_case_access_falls_back_when_unavailable(monkeypatch):
+    monkeypatch.setenv("MAKO_CASE_BACKEND", "access")
+    monkeypatch.delenv("MAKO_STRICT_BACKEND", raising=False)
+    monkeypatch.delenv("MAKO_ACCESS_CONN", raising=False)
+    monkeypatch.delenv("MAKO_ACCESS_DB", raising=False)
+    assert isinstance(get_case_repository(), JsonCaseRepository)
+
+
+def test_access_colmap_covers_visible_fields():
+    # 画面で確認できた ACROS_NOAHフィールド情報 の主要フィールドが対応づいていること。
+    assert ACCESS_COLMAP["case_id"] == "SR番号"
+    assert ACCESS_COLMAP["customer_name"] == "得意先名"
+    assert ACCESS_COLMAP["model_code"] == "システム形式名"
+    assert ACCESS_COLMAP["remote_flag"] == "リモメン有無"

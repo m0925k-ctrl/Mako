@@ -16,7 +16,7 @@ class RepairHistorySource(SearchSource):
         results: list[SearchResult] = []
 
         # 現行の受付ケース
-        for case in store.cases:
+        for case in store.list_cases():
             score, _ = score_text(
                 query_terms,
                 f"{case['case_id']} {case['customer_name']} {case['model']}",

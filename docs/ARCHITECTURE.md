@@ -102,10 +102,15 @@
 
 `app/store.py` の各メソッドが差し替えポイント。呼び出し側（アダプタ／コンソール）は不変。
 
+> **現場の実データ環境**：受付データは **Microsoft Access**（`ACROS_*` 連結テーブル、
+> `A1053DB_顧客`、`A1020DB_形式名説明表`、`Q_サービス要求` 等のクエリ）に集約され、
+> VBA のボタンで取得できる状態にある。得意先情報は Oracle からも ODBC で取得可能。
+> よって Web アプリは **同じ Access / Oracle を ODBC で参照** する方針（下記 3.1・3.2）。
+
 | データ | 現状（モック） | 本番連携の想定 |
 |---|---|---|
-| **得意先（顧客）情報** | `customers.json` | **Oracle（ODBC / pyodbc）で取得可 → 実装済（下記 3.1）** |
-| ケース/受付 | `cases.json` | CT-SQUARE API もしくは 連携DB（受付番号・機器IDで照会）。Oracle 上にあれば得意先と同方式 |
+| **受付ケース** | `cases.json` | **Access（ODBC）で `ACROS_NOAHフィールド情報` 等を参照 → 実装済（3.2）** |
+| **得意先（顧客）情報** | `customers.json` | **Oracle / Access（ODBC）で取得 → 実装済（3.1）** |
 | エラーコード | `error_codes.json` | TERRA 参照API / エクスポートDB |
 | 部品判定率・在庫・交換歴 | `parts.json` | NFITS / 在庫システム |
 | 掲示板 | `bulletin.json` | FS掲示板の検索API or 全文検索インデックス |
@@ -161,8 +166,61 @@ uvicorn app.main:app --port 8000
 special_handling, caution_persons, banned_persons, hot_issue_site,
 remote_maintenance_contract`）。実テーブルの列名に合わせて `get()` の SELECT を調整するか、
 DB 側にこの列名のビューを用意する。複数値カラム（要注意人物・出入り禁止者）は
-改行/セミコロン区切りをリスト化する実装（`_split_multi`）。同じパターンで
-ケース／機器情報が Oracle にある場合も同方式で接続できる。
+改行/セミコロン区切りをリスト化する実装（`_split_multi`）。
+得意先が Access 側にある場合は `MAKO_CUSTOMER_BACKEND=access`（`A1053DB_顧客`）を使う。
+
+### 3.2 受付ケースの Access ODBC 連携（実装済み）
+
+受付データは既存 Access DB にあり VBA で取得できるため、Web の `store` は同じ Access を
+ODBC で参照する。`app/repositories/cases.py`：
+
+- `CaseRepository`（抽象）… `get()` / `find_by_error()` / `list_all()`
+  - `JsonCaseRepository`（既定・`app/data/cases.json`）
+  - `AccessCaseRepository`（`pyodbc` + Microsoft Access Driver）
+- 切り替えは `MAKO_CASE_BACKEND=json|access`。失敗時は JSON へ自動フォールバック
+  （`MAKO_STRICT_BACKEND=1` で禁止）。
+
+**画面で確認できたフィールドのマッピング**（`ACROS_NOAHフィールド情報` → ケース形）
+
+| Access フィールド | ケース形のキー | 備考 |
+|---|---|---|
+| SR番号 | `case_id` | 受付番号 |
+| 受付日 | `received_at` | |
+| お客様ID | `customer_id` | 得意先マスタ結合キー |
+| 得意先名 | `customer_name` | |
+| システム形式名 | `model` / `model_code` | `A1020DB_形式名説明表` で名称補完可 |
+| システム製造番号 | `customer_equipment_id` | 号機特定 |
+| 契約カテゴリ | `sla_level` | SLA判定の入力 |
+| リモメン有無 | `remote_maintenance.available` | |
+| 問題要約 + 受付内容 | `symptom` | 連結して表示 |
+| 訪問予定日時 | `dispatch.estimated_arrival` | |
+| 重要度 | （SLA/severity） | |
+| 作業担当コード | `assignee` / `dispatch.fs_contact` | `SENS_ユーザ情報` で氏名補完可 |
+
+**後続フェーズで別テーブル結合**（現状は空＋TODO）：
+`install_base`←`ACROS_既納品システム情報`、`work_history`←`ACROS_サービス要求`/`ACROS_タスク`、
+部品判定率・在庫←`ACROS_部品要求`/`品目`/`部品対応限度マスタ`/`発注残`、
+`error_code`←NOAH 該当フィールド（`MAKO_ACCESS_ERROR_FIELD` で指定）、
+`hot_issue_site`←Hot Issue 管理ソース。
+
+**接続設定（`.env.example` 参照）**
+
+```bash
+pip install -r requirements.txt -r requirements-odbc.txt   # pyodbc
+set MAKO_CASE_BACKEND=access
+set MAKO_ACCESS_DB=\\fileserver\CSC\NOAH.accdb   # VBA と同じ DB
+uvicorn app.main:app --port 8000
+```
+
+**疎通確認**：`python scripts/check_odbc.py drivers` でドライバ一覧、
+`python scripts/check_odbc.py access <SR番号>` で1件取得、
+`python scripts/check_odbc.py peek "Q_サービス要求"` で先頭数行を確認できる。
+
+> **ODBC の bit 数**：Python(64bit) からは 64bit 版 Access ドライバが必要。
+> 32/64bit が食い違うと「データ ソース名が見つからない」系のエラーになる典型ポイント。
+
+**既存 VBA/クエリの再利用**：`Q_サービス要求` のような既存クエリをそのまま
+`MAKO_ACCESS_CASE_TABLE` に指定して読めるため、VBA で組んだ抽出ロジックを流用できる。
 
 ### 全文検索について
 モックは Python 内の部分一致（`score_text`）。共有ファイルや掲示板が大規模化する場合は、

@@ -1,4 +1,0 @@
-# Oracle ODBC バックエンドを使う場合のみ追加インストール:
-#   pip install -r requirements.txt -r requirements-oracle.txt
-# 別途、OS 側に unixODBC と Oracle ODBC ドライバ(または Instant Client)が必要。
-pyodbc==5.2.0

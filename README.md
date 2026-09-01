@@ -38,21 +38,29 @@ uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000 をブラウザで開く
 ```
 
-## 得意先情報のバックエンド（JSON / Oracle ODBC）
+## データバックエンド（JSON モック / Access・Oracle ODBC）
 
-得意先（顧客）情報は差し替え可能なリポジトリ構造で、環境変数で切り替えます。
+受付ケースと得意先情報は差し替え可能なリポジトリ構造で、環境変数で切り替えます。
+既定は JSON モック。本番は **VBA と同じ Access DB** や Oracle を ODBC で参照します。
 
 ```bash
-# 既定: JSON モック（app/data/customers.json）
-# Oracle ODBC を使う場合:
-pip install -r requirements.txt -r requirements-oracle.txt   # pyodbc 追加
+pip install -r requirements.txt -r requirements-odbc.txt   # pyodbc 追加
+
+# 受付ケースを既存 Access DB から読む（ACROS_NOAHフィールド情報 等）
+export MAKO_CASE_BACKEND=access
+export MAKO_ACCESS_DB='\\fileserver\CSC\NOAH.accdb'
+
+# 得意先を Oracle から読む場合
 export MAKO_CUSTOMER_BACKEND=oracle
-export MAKO_ORACLE_CONN="DRIVER={Oracle in OraClient19Home1};DBQ=host:1521/ORCLPDB;UID=csc;PWD=***"
+export MAKO_ORACLE_CONN='DRIVER={Oracle in OraClient19Home1};DBQ=host:1521/ORCLPDB;UID=csc;PWD=***'
+
 uvicorn app.main:app --port 8000
 ```
 
 - 接続失敗時は既定で JSON に自動フォールバック（`MAKO_STRICT_BACKEND=1` で禁止）。
-- 設定例は [`.env.example`](.env.example)、詳細は `docs/ARCHITECTURE.md` 3.1 参照。
+- 疎通確認: `python scripts/check_odbc.py drivers` / `... access <SR番号>` / `... peek "Q_サービス要求"`
+- 設定例は [`.env.example`](.env.example)、フィールド対応表は `docs/ARCHITECTURE.md` 3.1・3.2 参照。
+- サーバー無しで画面だけ見たい場合は、デモデータ内蔵のブラウザ版（Artifact）を利用。
 
 ## テスト
 

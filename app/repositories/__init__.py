@@ -5,6 +5,12 @@
 """
 from __future__ import annotations
 
+from .cases import CaseRepository, get_case_repository
 from .customers import CustomerRepository, get_customer_repository
 
-__all__ = ["CustomerRepository", "get_customer_repository"]
+__all__ = [
+    "CustomerRepository",
+    "get_customer_repository",
+    "CaseRepository",
+    "get_case_repository",
+]

@@ -30,7 +30,14 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "version": __version__}
+    return {
+        "status": "ok",
+        "version": __version__,
+        "backends": {
+            "cases": store.case_repo.backend,
+            "customers": store.customer_repo.backend,
+        },
+    }
 
 
 @app.get("/api/sources", response_model=list[SourceInfo])

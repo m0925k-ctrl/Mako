@@ -226,23 +226,106 @@ class OracleCustomerRepository(CustomerRepository):
 
 
 # --------------------------------------------------------------------------
+# Access ODBC 実装(本番想定)
+# --------------------------------------------------------------------------
+class AccessCustomerRepository(CustomerRepository):
+    """既存 Access DB の得意先マスタ(A1053DB_顧客 等)を ODBC で読む。
+
+    テーブル/列名は実スキーマに合わせて env で上書きする。
+    メモの追記先が Access に無い場合は、メモ専用テーブルを別途用意して INSERT する
+    (未整備の間は追記不可のため RuntimeError)。
+    """
+
+    backend = "access"
+
+    CUSTOMER_TABLE = os.getenv("MAKO_ACCESS_CUSTOMER_TABLE", "A1053DB_顧客")
+    NOTE_TABLE = os.getenv("MAKO_ACCESS_CUSTOMER_NOTE_TABLE", "")  # 未設定ならメモ追記不可
+    # 得意先マスタ 列名 → 返却キー(実スキーマに合わせて調整)
+    COLMAP = {
+        "customer_id": os.getenv("MAKO_ACCESS_CUSTOMER_ID_COL", "お客様ID"),
+        "customer_name": os.getenv("MAKO_ACCESS_CUSTOMER_NAME_COL", "得意先名"),
+    }
+
+    def __init__(self) -> None:
+        from app.repositories.odbc import build_access_conn_str, connect, rows_as_dicts
+
+        self._connect = lambda: connect(build_access_conn_str())
+        self._rows = rows_as_dicts
+        self._connect().close()  # 接続確認
+
+    def get(self, customer_id: str) -> dict | None:
+        idc = self.COLMAP["customer_id"]
+        namec = self.COLMAP["customer_name"]
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM [{self.CUSTOMER_TABLE}] WHERE [{idc}] = ?", [customer_id])
+            rows = self._rows(cur)
+            if not rows:
+                return None
+            r = rows[0]
+            return {
+                "customer_id": r.get(idc.lower()) or customer_id,
+                "customer_name": r.get(namec.lower()) or "",
+                "area": r.get("area") or r.get("支社") or "",
+                "hot_issue_site": False,
+                "remote_maintenance_contract": False,
+                "access_method": r.get("access_method") or "",
+                "part_receipt_location": r.get("part_receipt_location") or "",
+                "promises": r.get("promises") or "",
+                "special_handling": r.get("special_handling") or "",
+                "caution_persons": [],
+                "banned_persons": [],
+                "notes": [],  # TODO: メモ専用テーブルから取得
+            }
+
+    def add_note(self, customer_id: str, text: str, author: str) -> dict:
+        if not self.NOTE_TABLE:
+            raise RuntimeError(
+                "メモ追記先テーブル未設定(MAKO_ACCESS_CUSTOMER_NOTE_TABLE)。"
+                "得意先メモ用テーブルを用意してください。"
+            )
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT COUNT(*) FROM [{self.NOTE_TABLE}] WHERE [customer_id] = ?", [customer_id]
+            )
+            seq = cur.fetchone()[0] + 1
+            note = self._new_note(customer_id, text, author, seq)
+            cur.execute(
+                f"INSERT INTO [{self.NOTE_TABLE}] (note_id, customer_id, note_text, author, created_at) "
+                f"VALUES (?, ?, ?, ?, ?)",
+                [note["id"], customer_id, note["text"], note["author"], note["created_at"]],
+            )
+            conn.commit()
+            return note
+
+
+# --------------------------------------------------------------------------
 # ファクトリ
 # --------------------------------------------------------------------------
+_BACKENDS = {
+    "json": JsonCustomerRepository,
+    "oracle": OracleCustomerRepository,
+    "access": AccessCustomerRepository,
+}
+
+
 def get_customer_repository() -> CustomerRepository:
     backend = os.getenv("MAKO_CUSTOMER_BACKEND", "json").lower()
     strict = os.getenv("MAKO_STRICT_BACKEND", "0") == "1"
 
-    if backend == "oracle":
-        try:
-            return OracleCustomerRepository()
-        except Exception as exc:  # pyodbc 未導入 / 接続失敗 等
-            if strict:
-                raise
-            import logging
+    cls = _BACKENDS.get(backend)
+    if cls is None or backend == "json":
+        return JsonCustomerRepository()
 
-            logging.getLogger(__name__).warning(
-                "Oracle バックエンド初期化に失敗したため JSON にフォールバックします: %s", exc
-            )
-            return JsonCustomerRepository()
+    try:
+        return cls()
+    except Exception as exc:  # pyodbc 未導入 / 接続失敗 等
+        if strict:
+            raise
+        import logging
 
-    return JsonCustomerRepository()
+        logging.getLogger(__name__).warning(
+            "%s バックエンド初期化に失敗したため JSON にフォールバックします: %s", backend, exc
+        )
+        return JsonCustomerRepository()

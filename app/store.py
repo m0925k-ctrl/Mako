@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.repositories import get_customer_repository
+from app.repositories import get_case_repository, get_customer_repository
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -29,27 +29,26 @@ class Store:
 
     def reload(self) -> None:
         self.bulletin: list[dict] = _load("bulletin.json")
-        self.cases: list[dict] = _load("cases.json")
         self.error_codes: list[dict] = _load("error_codes.json")
         self.parts: dict = _load("parts.json")
         self.manuals: list[dict] = _load("manuals.json")
         self.shared_files: list[dict] = _load("shared_files.json")
         self.cases_db: list[dict] = _load("cases_db.json")
         self.email_templates: dict = _load("email_templates.json")
-        # 得意先情報はバックエンド差し替え可能なリポジトリ経由(既定 JSON / 本番 Oracle ODBC)。
+        # 受付ケースと得意先情報はバックエンド差し替え可能なリポジトリ経由。
+        #   既定 JSON / 本番 Access ODBC(ケース) ・ Oracle/Access ODBC(得意先)
+        self.case_repo = get_case_repository()
         self.customer_repo = get_customer_repository()
 
     # ---- ルックアップ ----------------------------------------------------
+    def list_cases(self, limit: int = 500) -> list[dict]:
+        return self.case_repo.list_all(limit)
+
     def get_case(self, case_id: str) -> dict | None:
-        cid = case_id.strip().lower()
-        for c in self.cases:
-            if c["case_id"].lower() == cid:
-                return c
-        return None
+        return self.case_repo.get(case_id)
 
     def find_cases_by_error(self, code: str) -> list[dict]:
-        code = code.strip().lower()
-        return [c for c in self.cases if (c.get("error_code") or "").lower() == code]
+        return self.case_repo.find_by_error(code)
 
     def get_customer(self, customer_id: str) -> dict | None:
         return self.customer_repo.get(customer_id)
