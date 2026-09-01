@@ -8,15 +8,12 @@ API 呼び出しに差し替えることを想定している。呼び出し側(
 from __future__ import annotations
 
 import json
-import threading
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-DATA_DIR = Path(__file__).parent / "data"
+from app.repositories import get_customer_repository
 
-# 得意先メモの追記はプロセス内で書き戻すため、簡易ロックを用意する。
-_write_lock = threading.Lock()
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def _load(name: str) -> Any:
@@ -33,13 +30,14 @@ class Store:
     def reload(self) -> None:
         self.bulletin: list[dict] = _load("bulletin.json")
         self.cases: list[dict] = _load("cases.json")
-        self.customers: list[dict] = _load("customers.json")
         self.error_codes: list[dict] = _load("error_codes.json")
         self.parts: dict = _load("parts.json")
         self.manuals: list[dict] = _load("manuals.json")
         self.shared_files: list[dict] = _load("shared_files.json")
         self.cases_db: list[dict] = _load("cases_db.json")
         self.email_templates: dict = _load("email_templates.json")
+        # 得意先情報はバックエンド差し替え可能なリポジトリ経由(既定 JSON / 本番 Oracle ODBC)。
+        self.customer_repo = get_customer_repository()
 
     # ---- ルックアップ ----------------------------------------------------
     def get_case(self, case_id: str) -> dict | None:
@@ -54,10 +52,7 @@ class Store:
         return [c for c in self.cases if (c.get("error_code") or "").lower() == code]
 
     def get_customer(self, customer_id: str) -> dict | None:
-        for c in self.customers:
-            if c["customer_id"] == customer_id:
-                return c
-        return None
+        return self.customer_repo.get(customer_id)
 
     def get_error_code(self, code: str) -> dict | None:
         code = code.strip().lower()
@@ -77,29 +72,8 @@ class Store:
 
     # ---- 得意先メモの追記(編集系) ---------------------------------------
     def add_customer_note(self, customer_id: str, text: str, author: str) -> dict:
-        """得意先メモを追記する。
-
-        モックではメモリ上の customers に追加し、JSON へ書き戻す。
-        本番では得意先マスタ/メモ管理システムへの登録に差し替える。
-        """
-        with _write_lock:
-            customer = self.get_customer(customer_id)
-            if customer is None:
-                raise KeyError(customer_id)
-            seq = len(customer.get("notes", [])) + 1
-            note = {
-                "id": f"N-{customer_id.split('-')[-1]}-{seq:02d}",
-                "text": text.strip(),
-                "author": author.strip() or "unknown",
-                "created_at": datetime.now().isoformat(timespec="seconds"),
-            }
-            customer.setdefault("notes", []).append(note)
-            self._persist_customers()
-            return note
-
-    def _persist_customers(self) -> None:
-        with open(DATA_DIR / "customers.json", "w", encoding="utf-8") as fh:
-            json.dump(self.customers, fh, ensure_ascii=False, indent=2)
+        """得意先メモを追記する。バックエンド(JSON/Oracle)はリポジトリが吸収する。"""
+        return self.customer_repo.add_note(customer_id, text, author)
 
 
 store = Store()

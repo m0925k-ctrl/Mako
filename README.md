@@ -38,6 +38,22 @@ uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000 をブラウザで開く
 ```
 
+## 得意先情報のバックエンド（JSON / Oracle ODBC）
+
+得意先（顧客）情報は差し替え可能なリポジトリ構造で、環境変数で切り替えます。
+
+```bash
+# 既定: JSON モック（app/data/customers.json）
+# Oracle ODBC を使う場合:
+pip install -r requirements.txt -r requirements-oracle.txt   # pyodbc 追加
+export MAKO_CUSTOMER_BACKEND=oracle
+export MAKO_ORACLE_CONN="DRIVER={Oracle in OraClient19Home1};DBQ=host:1521/ORCLPDB;UID=csc;PWD=***"
+uvicorn app.main:app --port 8000
+```
+
+- 接続失敗時は既定で JSON に自動フォールバック（`MAKO_STRICT_BACKEND=1` で禁止）。
+- 設定例は [`.env.example`](.env.example)、詳細は `docs/ARCHITECTURE.md` 3.1 参照。
+
 ## テスト
 
 ```bash

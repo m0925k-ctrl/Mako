@@ -104,14 +104,65 @@
 
 | データ | 現状（モック） | 本番連携の想定 |
 |---|---|---|
-| ケース/受付 | `cases.json` | CT-SQUARE API もしくは 連携DB（受付番号・機器IDで照会） |
+| **得意先（顧客）情報** | `customers.json` | **Oracle（ODBC / pyodbc）で取得可 → 実装済（下記 3.1）** |
+| ケース/受付 | `cases.json` | CT-SQUARE API もしくは 連携DB（受付番号・機器IDで照会）。Oracle 上にあれば得意先と同方式 |
 | エラーコード | `error_codes.json` | TERRA 参照API / エクスポートDB |
 | 部品判定率・在庫・交換歴 | `parts.json` | NFITS / 在庫システム |
 | 掲示板 | `bulletin.json` | FS掲示板の検索API or 全文検索インデックス |
 | 事例 | `cases_db.json` | 事例DB / ナレッジ検索 |
 | 共有ファイル | `shared_files.json` | ファイルサーバ全文検索（Elasticsearch 等） |
-| 得意先メモ | `customers.json`（追記は同ファイルへ書き戻し） | 得意先マスタ＋メモ管理（監査ログ付き） |
+| 得意先メモ | `customers.json`（追記は同ファイルへ書き戻し） | Oracle のメモテーブルへ INSERT（監査ログ付き） |
 | リモメン/アラート | `cases.json` 内 | リモートメンテナンス基盤の状態API |
+
+### 3.1 得意先情報の Oracle ODBC 連携（実装済み）
+
+現場で「顧客情報は Oracle から ODBC で取得できる」ため、得意先情報はバックエンドを
+差し替えられる **リポジトリ構造**（`app/repositories/customers.py`）で実装済み。
+
+- `CustomerRepository`（抽象）… `get()` / `add_note()` / `reload()`
+  - `JsonCustomerRepository` … `app/data/customers.json`（開発用モック・既定）
+  - `OracleCustomerRepository` … Oracle へ `pyodbc` で接続する本番実装
+- 切り替えは環境変数 `MAKO_CUSTOMER_BACKEND=json|oracle`。
+- `oracle` で接続に失敗した場合、試作を止めないよう **JSON へ自動フォールバック**
+  （本番は `MAKO_STRICT_BACKEND=1` でフォールバック禁止＝設定ミスを検知）。
+- 上位（`store` / `console` / API）は返却辞書の形にのみ依存し、バックエンドを知らない。
+
+```
+store.get_customer / add_customer_note
+        │
+        ▼
+CustomerRepository（抽象）
+   ├─ JsonCustomerRepository（既定）
+   └─ OracleCustomerRepository（pyodbc, env で接続）
+```
+
+**接続設定（`.env.example` 参照）**
+
+| 環境変数 | 用途 |
+|---|---|
+| `MAKO_CUSTOMER_BACKEND` | `json`（既定） / `oracle` |
+| `MAKO_ORACLE_CONN` | pyodbc 接続文字列をそのまま指定（最優先） |
+| `MAKO_ORACLE_DSN` / `MAKO_ORACLE_UID` / `MAKO_ORACLE_PWD` | DSN＋認証で組み立てる場合 |
+| `MAKO_ORACLE_CUSTOMER_TABLE` / `MAKO_ORACLE_NOTE_TABLE` | 実スキーマに合わせたテーブル名の上書き |
+| `MAKO_STRICT_BACKEND` | `1` でフォールバック禁止 |
+
+**導入手順**
+
+```bash
+pip install -r requirements.txt -r requirements-oracle.txt   # pyodbc を追加
+# OS 側に unixODBC と Oracle ODBC ドライバ(または Instant Client)が必要
+export MAKO_CUSTOMER_BACKEND=oracle
+export MAKO_ORACLE_CONN="DRIVER={Oracle in OraClient19Home1};DBQ=host:1521/ORCLPDB;UID=csc;PWD=***"
+uvicorn app.main:app --port 8000
+```
+
+**要マッピング**：`OracleCustomerRepository` の SQL は列名を仮置き
+（`customer_id, customer_name, area, access_method, part_receipt_location, promises,
+special_handling, caution_persons, banned_persons, hot_issue_site,
+remote_maintenance_contract`）。実テーブルの列名に合わせて `get()` の SELECT を調整するか、
+DB 側にこの列名のビューを用意する。複数値カラム（要注意人物・出入り禁止者）は
+改行/セミコロン区切りをリスト化する実装（`_split_multi`）。同じパターンで
+ケース／機器情報が Oracle にある場合も同方式で接続できる。
 
 ### 全文検索について
 モックは Python 内の部分一致（`score_text`）。共有ファイルや掲示板が大規模化する場合は、
