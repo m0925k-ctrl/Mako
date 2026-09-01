@@ -1,0 +1,46 @@
+[
+  {
+    "id": "MAN-CT-AQL-SVC-07",
+    "title": "Aquilion Lightning サービスマニュアル 第7章 DAS/ガントリ制御",
+    "summary": "DASボードの交換手順、同期調整、2104/E-4021 系エラーのトラブルシューティングフロー。",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "doc_type": "サービスマニュアル",
+    "error_codes": ["2104", "E-4021"],
+    "url": "https://docs.internal.example.com/manuals/CT/AQL/svc07",
+    "updated_at": "2025-04-01"
+  },
+  {
+    "id": "MAN-MR-VOR-CRYO-03",
+    "title": "Vantage Orian 極低温系メンテナンス手順",
+    "summary": "ヘリウム充填、コールドヘッド交換、液面監視とクエンチ予防の手順。",
+    "modality": "MRI",
+    "model": "Vantage Orian",
+    "doc_type": "サービスマニュアル",
+    "error_codes": ["3300"],
+    "url": "https://docs.internal.example.com/manuals/MR/VOR/cryo03",
+    "updated_at": "2025-02-15"
+  },
+  {
+    "id": "FAQ-US-AI800-PROBE",
+    "title": "Aplio i800 プローブ認識不良 FAQ",
+    "summary": "プローブ認識不良・画像ノイズの切り分け（別ポート/別プローブ確認、DASボード起因の判別）。",
+    "modality": "超音波",
+    "model": "Aplio i800",
+    "doc_type": "FAQ",
+    "error_codes": [],
+    "url": "https://docs.internal.example.com/faq/US/AI800/probe",
+    "updated_at": "2025-06-30"
+  },
+  {
+    "id": "MAN-AG-ALP-BED-02",
+    "title": "Alphenix 寝台系 保守マニュアル",
+    "summary": "寝台昇降機構、インターロック、E-7130 過電流保護のリセットと点検。",
+    "modality": "血管撮影",
+    "model": "Alphenix",
+    "doc_type": "サービスマニュアル",
+    "error_codes": ["E-7130"],
+    "url": "https://docs.internal.example.com/manuals/AG/ALP/bed02",
+    "updated_at": "2025-03-20"
+  }
+]

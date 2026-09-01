@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mako 集約検索コンソール</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">Mako</span>
+      <span class="brand-sub">CSC 集約検索コンソール</span>
+    </div>
+    <nav class="mode-nav">
+      <button class="mode-btn active" data-mode="console">ケースコンソール</button>
+      <button class="mode-btn" data-mode="search">横断検索</button>
+    </nav>
+  </header>
+
+  <!-- ケースコンソール -->
+  <main id="mode-console" class="mode-panel">
+    <section class="opener">
+      <form id="open-form">
+        <input id="open-input" type="text" placeholder="ケースID または エラーコード(4桁) を入力  例: CS-2025-100427 / 2104" autocomplete="off" />
+        <button type="submit">開く</button>
+      </form>
+      <div class="quick-open" id="quick-open"></div>
+    </section>
+
+    <div id="tab-bar" class="tab-bar"></div>
+    <div id="tab-content" class="tab-content">
+      <div class="empty-hint">
+        ケースID または エラーコードを入力して開いてください。<br />
+        複数の得意先を並行して別タブで開けます。
+      </div>
+    </div>
+  </main>
+
+  <!-- 横断検索 -->
+  <main id="mode-search" class="mode-panel" hidden>
+    <section class="search-box">
+      <form id="search-form">
+        <input id="search-input" type="text" placeholder="キーワード(スペース区切りで AND)  例: 2104 冷却 / ヘリウム / プローブ ノイズ" autocomplete="off" />
+        <button type="submit">検索</button>
+      </form>
+      <div id="source-filters" class="source-filters"></div>
+    </section>
+    <div id="search-meta" class="search-meta"></div>
+    <div id="search-results" class="search-results"></div>
+  </main>
+
+  <!-- メールプレビュー モーダル -->
+  <div id="mail-modal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <span id="mail-title"></span>
+        <button id="mail-close" class="icon-btn">×</button>
+      </div>
+      <label class="mail-field">件名<input id="mail-subject" type="text" /></label>
+      <label class="mail-field">本文<textarea id="mail-body" rows="16"></textarea></label>
+      <div class="modal-actions">
+        <button id="mail-copy" class="primary">クリップボードにコピー</button>
+        <span id="mail-note" class="hint"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

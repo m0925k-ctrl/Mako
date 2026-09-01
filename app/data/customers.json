@@ -1,0 +1,55 @@
+[
+  {
+    "customer_id": "C-0001",
+    "customer_name": "○○中央病院",
+    "area": "首都圏",
+    "hot_issue_site": true,
+    "remote_maintenance_contract": true,
+    "access_method": "夜間・休日は救急外来入口から入館。守衛室で入館証を受領（身分証提示必須）。",
+    "part_receipt_location": "地下1階 中央機材センター 受付。18時以降は警備員預かり。",
+    "promises": "作業前に必ず放射線技師長へ一報。稼働率が高いため日中の停止は事前調整必須。",
+    "special_handling": "CT2号機は研究用途あり。パラメータ変更時は医学物理士の立会いが必要。",
+    "caution_persons": [
+      "購買部 X氏：見積根拠を細かく確認するため書面必須"
+    ],
+    "banned_persons": [],
+    "notes": [
+      {
+        "id": "N-0001-01",
+        "text": "駐車場は東側来客用を使用。サービスカーは3番ゲートで登録が必要。",
+        "author": "坪内",
+        "created_at": "2025-07-10T10:00:00"
+      }
+    ]
+  },
+  {
+    "customer_id": "C-0002",
+    "customer_name": "△△総合医療センター",
+    "area": "関西",
+    "hot_issue_site": false,
+    "remote_maintenance_contract": true,
+    "access_method": "正面ロビー受付で入館手続き。工事・作業は施設課の承認番号が必要。",
+    "part_receipt_location": "1階 用度課 荷受け。時間指定は9:00-16:00。",
+    "promises": "MRI室入室前に金属チェックリストの提出を求められる。",
+    "special_handling": "",
+    "caution_persons": [],
+    "banned_persons": [
+      "旧委託業者 Y社スタッフ（契約終了、入館不可）"
+    ],
+    "notes": []
+  },
+  {
+    "customer_id": "C-0003",
+    "customer_name": "□□クリニック",
+    "area": "中部",
+    "hot_issue_site": false,
+    "remote_maintenance_contract": false,
+    "access_method": "診療時間外は院長へ事前連絡し、裏口で対応。",
+    "part_receipt_location": "受付カウンターで預かり。",
+    "promises": "小規模のため訪問は午前診療後（13時以降）が望ましい。",
+    "special_handling": "",
+    "caution_persons": [],
+    "banned_persons": [],
+    "notes": []
+  }
+]

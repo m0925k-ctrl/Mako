@@ -1,0 +1,22 @@
+{
+  "in_progress": {
+    "label": "【対応中】FS掲示板 対応中メール",
+    "subject": "【対応中】{case_id} {customer_name} {model} {error_label}",
+    "body": "FS掲示板 各位\n\n下記案件、対応中です。\n\n■ケースID：{case_id}\n■得意先：{customer_name}\n■機種：{model}（{model_code}）\n■機器ID：{customer_equipment_id}\n■現象：{symptom}\n■エラーコード：{error_code}\n■SLA：{sla_level}\n■リモメン：{remote_status}\n■直前アラート：{last_alert}\n■ディスパッチ先：{dispatch_area} / {fs_contact}\n\n初動対応を進めています。続報あり次第連携します。\n\n受付：{assignee}"
+  },
+  "part_order": {
+    "label": "部品出荷依頼メール",
+    "subject": "【部品出荷依頼】{case_id} {customer_name} {model}",
+    "body": "部品センター 各位\n\n下記のとおり部品出荷を依頼します。\n\n■ケースID：{case_id}\n■得意先：{customer_name}\n■機種：{model}（{model_code}）\n■機器ID：{customer_equipment_id}\n■希望部品：{part_list}\n■受け取り場所：{part_receipt_location}\n■希望納期：至急\n\n受付：{assignee}"
+  },
+  "part_proxy": {
+    "label": "部品代理登録メール",
+    "subject": "【部品代理登録】{case_id} {customer_name}",
+    "body": "業務管理 各位\n\n下記案件について部品の代理登録をお願いします。\n\n■ケースID：{case_id}\n■得意先：{customer_name}\n■機種：{model}（{model_code}）\n■対象部品：{part_list}\n\n受付：{assignee}"
+  },
+  "ctfs_board": {
+    "label": "CT-FS掲示板 反映内容",
+    "subject": "{case_id} {customer_name} {model} {error_label}",
+    "body": "【起票】{assignee}\n【得意先】{customer_name}\n【機種】{model}（{model_code}）\n【機器ID】{customer_equipment_id}\n【現象】{symptom}\n【エラー】{error_code}：{error_message}\n【発生源】{error_source}\n【SLA】{sla_level}\n【リモメン】{remote_status} / 直前アラート：{last_alert}\n【ディスパッチ】{dispatch_area} / {fs_contact}\n【想定部品】{part_list}\n【Hot Issue】{hot_issue}"
+  }
+}

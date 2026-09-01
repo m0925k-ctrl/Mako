@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "REF-2024-08812",
+    "fault_name": "スキャン開始直後停止（2104）",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "error_code": "2104",
+    "occurred_on": "2024-11-02",
+    "resolution": "冷却系エア抜きで一時復旧。後日DASボード交換で恒久対応。",
+    "parts_requested": ["BD71-208A"],
+    "part_request": true,
+    "registered_type": "FS報告"
+  },
+  {
+    "case_id": "REF-2023-04455",
+    "fault_name": "ガントリ回転異常（E-4021）",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "error_code": "E-4021",
+    "occurred_on": "2023-09-27",
+    "resolution": "スリップリング接点清掃で復旧。3ヶ月後再発しロータリユニット交換。",
+    "parts_requested": ["SR47-120B", "RU88-300A"],
+    "part_request": true,
+    "registered_type": "TCC対応"
+  },
+  {
+    "case_id": "REF-2025-01120",
+    "fault_name": "ヘリウム液面低下警告",
+    "modality": "MRI",
+    "model": "Vantage Orian",
+    "error_code": "3300",
+    "occurred_on": "2025-03-10",
+    "resolution": "ヘリウム充填で復旧。コールドヘッド動作は正常範囲。",
+    "parts_requested": [],
+    "part_request": false,
+    "registered_type": "FS報告"
+  },
+  {
+    "case_id": "REF-2024-06677",
+    "fault_name": "寝台上下動作不能（E-7130）",
+    "modality": "血管撮影",
+    "model": "Alphenix",
+    "error_code": "E-7130",
+    "occurred_on": "2024-06-18",
+    "resolution": "昇降モータドライバの過電流保護作動。ドライバ交換で復旧。",
+    "parts_requested": ["DR60-540A"],
+    "part_request": true,
+    "registered_type": "FS報告"
+  },
+  {
+    "case_id": "REF-2025-00990",
+    "fault_name": "プローブ認識不良・画像ノイズ",
+    "modality": "超音波",
+    "model": "Aplio i800",
+    "error_code": null,
+    "occurred_on": "2025-01-22",
+    "resolution": "プローブケーブル断線を確認しプローブ交換で復旧。",
+    "parts_requested": ["PVT-375BT"],
+    "part_request": true,
+    "registered_type": "FS報告"
+  }
+]

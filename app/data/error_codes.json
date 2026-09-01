@@ -1,0 +1,46 @@
+[
+  {
+    "code": "2104",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "message": "スキャン制御タイムアウト（DAS同期エラー）",
+    "source": "DAS / ガントリ制御ボード",
+    "cause": "DASボードとガントリ制御間の同期信号異常。冷却不足による熱ドリフト、またはボード故障。",
+    "action": "1) 冷却系のエア噛み確認とエア抜き。2) DAS同期ケーブルの挿し直し。3) 再現時はDASボード(BD71-208A)交換。",
+    "severity": "高",
+    "reference": "TERRA/CT/AQL/E2104"
+  },
+  {
+    "code": "E-4021",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "message": "ガントリ回転同期異常",
+    "source": "ロータリユニット / スリップリング",
+    "cause": "スリップリング接点の汚損・摩耗による信号断続。",
+    "action": "接点清掃。再現時はロータリユニット交換。ファーム v3.2.1 で恒久対策予定。",
+    "severity": "高",
+    "reference": "TERRA/CT/AQL/E4021"
+  },
+  {
+    "code": "E-7130",
+    "modality": "血管撮影",
+    "model": "Alphenix",
+    "message": "寝台昇降モータ過電流保護作動",
+    "source": "昇降モータドライバ",
+    "cause": "機械的負荷増大またはドライバ故障による過電流。",
+    "action": "非常停止/インターロック解除確認。負荷確認後ドライバ点検、必要時交換。",
+    "severity": "中",
+    "reference": "TERRA/AG/ALP/E7130"
+  },
+  {
+    "code": "3300",
+    "modality": "MRI",
+    "model": "Vantage Orian",
+    "message": "コールドヘッド駆動異常",
+    "source": "コンプレッサ / コールドヘッド",
+    "cause": "コールドヘッドの動作不良によりヘリウム再凝縮効率が低下。",
+    "action": "コンプレッサ吸排気圧確認。コールドヘッド動作音点検、必要時交換。液面低下時は充填手配。",
+    "severity": "高",
+    "reference": "TERRA/MR/VOR/E3300"
+  }
+]

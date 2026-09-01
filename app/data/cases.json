@@ -1,0 +1,112 @@
+[
+  {
+    "case_id": "CS-2025-100427",
+    "customer_id": "C-0001",
+    "customer_name": "○○中央病院",
+    "customer_equipment_id": "EQ-CT-4471",
+    "modality": "CT",
+    "model": "Aquilion Lightning",
+    "model_code": "TSX-308A/4W",
+    "symptom": "2104 エラー連続発生。スキャン開始直後に停止する。",
+    "error_code": "2104",
+    "received_at": "2025-08-30T08:45:00",
+    "status": "対応中",
+    "assignee": "受付 山本",
+    "sla_level": "L2",
+    "hot_issue_site": true,
+    "next_inspection": { "date": "2025-09-12", "type": "IDD交換予定（1〜2週間後の訪問時に同時実施）" },
+    "remote_maintenance": {
+      "available": true,
+      "connection_checked_at": "2025-08-30T09:10:00",
+      "connection_status": "接続OK",
+      "last_alert": "2025-08-30 06:12 CT-EXCESS 管球過熱 予兆アラート"
+    },
+    "dispatch": {
+      "area": "首都圏サービスステーション",
+      "fs_contact": "FS 高橋 090-XXXX-1234",
+      "night_contact": "夜間当番 佐々木 090-XXXX-0000",
+      "estimated_arrival": "2025-08-30T13:00:00"
+    },
+    "install_base": [
+      { "unit": "01", "model_code": "TSX-308A/4W", "serial": "4WA25Z2001" },
+      { "unit": "02", "model_code": "CGGT-XXXA/7A", "serial": "7AB25ZXXXX" },
+      { "unit": "15", "model_code": "GXRS-003C/3A", "serial": "3AC25ZXXXX" }
+    ],
+    "work_history": [
+      { "date": "2025-05-14", "summary": "定期点検（PM）実施。管球積算 82%。", "engineer": "FS 高橋", "parts_replaced": [] },
+      { "date": "2024-11-02", "summary": "2104 一時発生。冷却系エア抜き実施で復旧。", "engineer": "FS 井上", "parts_replaced": [] },
+      { "date": "2024-06-20", "summary": "DASボード交換。", "engineer": "FS 高橋", "parts_replaced": ["BD71-208A"] }
+    ]
+  },
+  {
+    "case_id": "CS-2025-100311",
+    "customer_id": "C-0002",
+    "customer_name": "△△総合医療センター",
+    "customer_equipment_id": "EQ-MR-2210",
+    "modality": "MRI",
+    "model": "Vantage Orian",
+    "model_code": "MRT-1550",
+    "symptom": "ヘリウム液面低下アラート表示。画像は取得可能。",
+    "error_code": null,
+    "received_at": "2025-08-29T15:20:00",
+    "status": "受付済",
+    "assignee": "受付 木村",
+    "sla_level": "L1",
+    "hot_issue_site": false,
+    "next_inspection": { "date": "2025-09-05", "type": "RDD交換予定" },
+    "remote_maintenance": {
+      "available": true,
+      "connection_checked_at": "2025-08-29T15:40:00",
+      "connection_status": "接続OK",
+      "last_alert": "2025-08-29 14:50 He液面 19% 低下警告"
+    },
+    "dispatch": {
+      "area": "関西サービスステーション",
+      "fs_contact": "FS 中村 090-XXXX-5678",
+      "night_contact": "夜間当番 松田 090-XXXX-1111",
+      "estimated_arrival": "2025-08-30T10:00:00"
+    },
+    "install_base": [
+      { "unit": "01", "model_code": "MRT-1550", "serial": "15A24ZXXXX" }
+    ],
+    "work_history": [
+      { "date": "2025-03-10", "summary": "ヘリウム充填実施。液面 95% まで回復。", "engineer": "FS 中村", "parts_replaced": [] },
+      { "date": "2024-09-05", "summary": "コールドヘッド交換。", "engineer": "FS 渡辺", "parts_replaced": ["CH55-750N"] }
+    ]
+  },
+  {
+    "case_id": "CS-2025-100508",
+    "customer_id": "C-0003",
+    "customer_name": "□□クリニック",
+    "customer_equipment_id": "EQ-US-8830",
+    "modality": "超音波",
+    "model": "Aplio i800",
+    "model_code": "TUS-AI800",
+    "symptom": "特定プローブで画像にノイズ。他プローブは正常。",
+    "error_code": null,
+    "received_at": "2025-08-31T10:05:00",
+    "status": "受付済",
+    "assignee": "受付 山本",
+    "sla_level": "L3",
+    "hot_issue_site": false,
+    "next_inspection": null,
+    "remote_maintenance": {
+      "available": false,
+      "connection_checked_at": null,
+      "connection_status": "リモメン未契約",
+      "last_alert": null
+    },
+    "dispatch": {
+      "area": "中部サービスステーション",
+      "fs_contact": "FS 加藤 090-XXXX-9012",
+      "night_contact": "夜間当番 林 090-XXXX-2222",
+      "estimated_arrival": "2025-09-01T14:00:00"
+    },
+    "install_base": [
+      { "unit": "01", "model_code": "TUS-AI800", "serial": "AI24ZXXXX" }
+    ],
+    "work_history": [
+      { "date": "2025-01-22", "summary": "プローブPVT-375BT ケーブル断線により交換。", "engineer": "FS 加藤", "parts_replaced": ["PVT-375BT"] }
+    ]
+  }
+]

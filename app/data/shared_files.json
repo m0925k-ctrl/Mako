@@ -1,0 +1,38 @@
+[
+  {
+    "id": "SF-SLA-MATRIX",
+    "title": "SLA判定マトリクス（モダリティ別 応答/復旧目標）",
+    "summary": "契約区分とモダリティから応答時間・復旧目標を判定。CT稼働停止はL2以上。",
+    "doc_type": "SLA判定",
+    "path": "//fileserver/CSC/共有/SLA/SLA判定マトリクス.xlsx",
+    "keywords": ["SLA", "応答時間", "復旧", "判定", "契約"],
+    "updated_at": "2025-07-01"
+  },
+  {
+    "id": "SF-SCRIPT-2104",
+    "title": "初動スクリプト：CT 2104 エラー",
+    "summary": "受付一次切り分けスクリプト。冷却/エア噛み確認→DAS同期→再現確認→ディスパッチ判断。",
+    "doc_type": "初動スクリプト",
+    "path": "//fileserver/CSC/共有/スクリプト/CT_2104.docx",
+    "keywords": ["2104", "初動", "スクリプト", "CT", "切り分け"],
+    "updated_at": "2025-08-05"
+  },
+  {
+    "id": "SF-DISPATCH-TABLE",
+    "title": "ディスパッチ先エリア担当表（夜間当番含む）",
+    "summary": "エリア別のサービスステーション担当者と夜間・休日当番の連絡先一覧。",
+    "doc_type": "ディスパッチ",
+    "path": "//fileserver/CSC/共有/ディスパッチ/エリア担当表.xlsx",
+    "keywords": ["ディスパッチ", "担当", "夜間", "当番", "エリア"],
+    "updated_at": "2025-08-20"
+  },
+  {
+    "id": "SF-PART-ORDER-FLOW",
+    "title": "部品特配・受け取り手順書",
+    "summary": "部品出荷依頼、代理登録、特配時の受け取り場所指定に関する手順。",
+    "doc_type": "手順書",
+    "path": "//fileserver/CSC/共有/部品/特配手順.pdf",
+    "keywords": ["部品", "特配", "出荷依頼", "代理登録", "受け取り"],
+    "updated_at": "2025-06-10"
+  }
+]

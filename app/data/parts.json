@@ -1,0 +1,46 @@
+{
+  "replacement_stats_by_error": {
+    "2104": [
+      { "part_no": "BD71-208A", "name": "DASボード", "category": "電装", "replace_rate": 0.62, "count": 31 },
+      { "part_no": "CA34-100B", "name": "DAS同期ケーブル", "category": "ケーブル", "replace_rate": 0.21, "count": 11 },
+      { "part_no": "PU12-045C", "name": "冷却ポンプ", "category": "冷却", "replace_rate": 0.11, "count": 6 },
+      { "part_no": "SN90-011D", "name": "温度センサ", "category": "センサ", "replace_rate": 0.06, "count": 3 }
+    ],
+    "E-4021": [
+      { "part_no": "RU88-300A", "name": "ロータリユニット", "category": "機構", "replace_rate": 0.48, "count": 12 },
+      { "part_no": "SR47-120B", "name": "スリップリング接点キット", "category": "機構", "replace_rate": 0.44, "count": 11 }
+    ],
+    "E-7130": [
+      { "part_no": "DR60-540A", "name": "昇降モータドライバ", "category": "電装", "replace_rate": 0.71, "count": 10 },
+      { "part_no": "MT61-220A", "name": "昇降モータ", "category": "機構", "replace_rate": 0.21, "count": 3 }
+    ],
+    "3300": [
+      { "part_no": "CH55-750N", "name": "コールドヘッド", "category": "冷却", "replace_rate": 0.66, "count": 19 },
+      { "part_no": "CP30-900N", "name": "コンプレッサ", "category": "冷却", "replace_rate": 0.24, "count": 7 }
+    ]
+  },
+  "stock": {
+    "BD71-208A": { "on_hand": 4, "location": "首都圏DC", "status": "在庫あり", "lead_time_days": 0 },
+    "CA34-100B": { "on_hand": 12, "location": "首都圏DC", "status": "在庫あり", "lead_time_days": 0 },
+    "PU12-045C": { "on_hand": 0, "location": "中央倉庫", "status": "取り寄せ", "lead_time_days": 5 },
+    "SN90-011D": { "on_hand": 3, "location": "中央倉庫", "status": "在庫あり", "lead_time_days": 1 },
+    "RU88-300A": { "on_hand": 1, "location": "中央倉庫", "status": "在庫僅少", "lead_time_days": 2 },
+    "SR47-120B": { "on_hand": 6, "location": "首都圏DC", "status": "在庫あり", "lead_time_days": 0 },
+    "DR60-540A": { "on_hand": 2, "location": "中部DC", "status": "在庫あり", "lead_time_days": 1 },
+    "MT61-220A": { "on_hand": 0, "location": "中央倉庫", "status": "取り寄せ", "lead_time_days": 7 },
+    "CH55-750N": { "on_hand": 2, "location": "関西DC", "status": "在庫あり", "lead_time_days": 1 },
+    "CP30-900N": { "on_hand": 0, "location": "中央倉庫", "status": "取り寄せ", "lead_time_days": 10 }
+  },
+  "nfits_history_by_equipment": {
+    "EQ-CT-4471": [
+      { "date": "2024-06-20", "part_no": "BD71-208A", "name": "DASボード", "qty": 1, "work_order": "NF-2024-55120" },
+      { "date": "2023-02-11", "part_no": "SN90-011D", "name": "温度センサ", "qty": 1, "work_order": "NF-2023-33012" }
+    ],
+    "EQ-MR-2210": [
+      { "date": "2024-09-05", "part_no": "CH55-750N", "name": "コールドヘッド", "qty": 1, "work_order": "NF-2024-61233" }
+    ],
+    "EQ-US-8830": [
+      { "date": "2025-01-22", "part_no": "PVT-375BT", "name": "プローブ", "qty": 1, "work_order": "NF-2025-70455" }
+    ]
+  }
+}
