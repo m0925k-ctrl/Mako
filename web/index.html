@@ -257,23 +257,18 @@
     vertical-align: middle;
   }
 
-  /* AI要約 */
-  .ai-btn {
-    display: none; align-items: center; gap: 6px; cursor: pointer;
-    border: 1px solid var(--accent); background: transparent; color: var(--accent-ink);
-    font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
-  }
-  .ai-btn:hover { background: var(--accent-soft); }
-  .ai-btn:disabled { opacity: .55; cursor: default; }
-  .ai-btn.big { font-size: 13.5px; padding: 9px 15px; }
-  body.has-sample .ai-btn { display: inline-flex; }
+  /* AI要約（保存済み・誰でも閲覧可） */
   .ai-block { margin: 0 0 22px; }
   .ai-out {
-    white-space: pre-wrap; background: var(--accent-soft); border: 1px solid var(--border);
-    border-radius: 10px; padding: 13px 15px; font-size: 13.5px; line-height: 1.65;
-    margin-top: 10px; color: var(--ink);
+    white-space: pre-wrap; background: var(--accent-soft);
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 10px; padding: 13px 15px; font-size: 13.5px; line-height: 1.7; color: var(--ink);
   }
-  .ai-out.thinking { color: var(--muted); font-style: italic; }
+  .ai-out.sm { margin: 12px 0 4px; font-size: 13px; line-height: 1.6; }
+  .ai-label {
+    display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+    color: var(--accent-ink); margin-bottom: 6px;
+  }
   .ai-hint { color: var(--faint); font-size: 12px; margin-top: 6px; }
 
   /* mobile */
@@ -373,6 +368,45 @@ const TASKS = [
   { id:"T-0045", device_id:"D-ENDO-01", content:"LED光源ユニットの予備在庫を社内補充", requested_at:"2026-08-25", due:"2026-09-02", status:"完了", assignee_id:"E02", related_report:"R-2026-0019", priority:"低", note:"9/1 発注済み。" },
 ];
 
+/* AI要約（あらかじめ生成して保存＝閲覧者はアカウント不要で読むだけ）
+   実運用では登録時に Power Automate + AI で生成し SharePoint に保存する。 */
+const KARTE_SUMMARY = {
+  "D-MRI-01":
+    "【現状】直近の緊急対応でRFコイルのコネクタ接触不良による画像ノイズを解消済み。装置は正常稼働、ヘリウム液面は72%で正常範囲。\n" +
+    "【繰り返し・注意点】冷却水ポンプの軽微な異音（2月に給脂で軽減、経過観察中）と、RFコイルコネクタ樹脂の劣化傾向。冷却系・RF系は継続監視。\n" +
+    "【未対応の残務】RFコイルケーブルの予防交換を次回定期点検（10/15）で提案・実施予定。\n" +
+    "【次回訪問での推奨アクション】RFコイルケーブルを予防交換。冷却水ポンプの異音を再確認し、ヘリウム液面の推移を記録する。",
+  "D-CT-01":
+    "【現状】定期点検を実施し画質・線量とも基準内で正常。ただしX線管球の使用回数が寿命目安の80%に到達。\n" +
+    "【注意点】管球は消耗の最終段階。年内交換を推奨。\n" +
+    "【未対応の残務】X線管球交換の見積を事務長へ提出（対応中・期限9/8）。\n" +
+    "【次回訪問での推奨アクション】管球交換の日程を調整。交換までは毎回、線量・画質を確認する。",
+  "D-ENDO-01":
+    "【現状】画像の色ムラの原因だったLED光源ユニットを交換し、色再現は正常化（医師立会い確認済み）。\n" +
+    "【注意点】旧ユニットは出力低下で経年劣化、持ち帰り解析中。\n" +
+    "【未対応の残務】なし（予備在庫の補充は9/1発注済み・完了）。\n" +
+    "【次回訪問での推奨アクション】次回点検で光源出力とホワイトバランスを確認する。",
+  "D-INC-01":
+    "【現状】定期点検で湿度センサーの2%偏差を校正し0.5%以内に是正。全アラーム正常動作。\n" +
+    "【注意点】酸素濃度センサーが残寿命3か月目安。NICU設置のため確実な予防交換が必要。\n" +
+    "【未対応の残務】酸素濃度センサーの交換部品を手配し次回訪問で交換（未対応・高・期限9/15）。\n" +
+    "【次回訪問での推奨アクション】部品到着後すみやかに酸素センサーを交換。温湿度精度とアラームを再確認する。",
+  "D-MON-05":
+    "【現状】更新設置後の初回点検を完了。各パラメータ校正・ネットワーク接続・セントラルモニタ通信すべて正常。看護師への操作説明済み。\n" +
+    "【注意点】旧機からの更新直後のため、現場スタッフが新操作に慣れるまでの補助が必要。\n" +
+    "【未対応の残務】旧機との操作の違い一覧を作成し看護部へ提出（未対応・期限9/5）。\n" +
+    "【次回訪問での推奨アクション】操作差分一覧を提出。設置初期のため次回点検で各パラメータの安定性を確認する。",
+};
+const REPORT_SUMMARY = {
+  "R-2026-0021": "RFコイルのコネクタ接触不良による画像ノイズを、清掃・再固定とRFキャリブレーションで解消。ファントム・臨床画像とも良好。コネクタ樹脂に劣化があり、次回定期でケーブル予防交換を提案予定。",
+  "R-2026-0018": "半年定期点検。ヘリウム液面72%で正常、冷却フィルターを交換、各シーケンス正常。特記事項なし。",
+  "R-2026-0009": "半年定期点検。冷却水ポンプの軽微な異音をベアリング給脂で軽減。運転は正常で経過観察。",
+  "R-2026-0020": "定期点検で画質・線量は基準内。X線管球が寿命目安の80%に到達し年内交換を推奨。事務長へ見積提出が必要。",
+  "R-2026-0019": "画像の色ムラの原因のLED光源ユニットを交換し色再現が正常化（医師確認済み）。予備在庫を社内手配。",
+  "R-2026-0017": "定期点検で湿度センサーの2%偏差を校正（0.5%以内）。全アラーム正常。酸素センサーは残寿命3か月で、次回交換のため部品手配の依頼あり。",
+  "R-2026-0022": "更新設置後の初回点検。校正・通信・操作説明を実施し全項目正常。旧機との操作差分一覧の提出依頼あり。",
+};
+
 /* この試作のデモ基準日 */
 const NOW = new Date("2026-09-02");
 
@@ -396,11 +430,6 @@ function enrichTask(t) {
 const R = REPORTS.map(enrichReport).sort((a,b) => b.when - a.when);
 const T = TASKS.map(enrichTask).sort((a,b) => ({高:0,中:1,低:2}[a.priority]-{高:0,中:1,低:2}[b.priority]) || (a.dueDate-b.dueDate));
 
-/* AI要約の状態（生成結果はセッション中キャッシュ） */
-let SAMPLE = null;
-const aiKarte = {};   // device_id -> 要約テキスト
-const aiReport = {};  // report_id -> 要約テキスト
-
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmtDT = (d) => `${fmtDate(d)} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
@@ -422,6 +451,9 @@ const prioTag = (p) => `<span class="prio prio-${p}">${p==="高"?"🔴":p==="中
 
 function reportBodyHtml(r) {
   let h = "";
+  if (REPORT_SUMMARY[r.id]) {
+    h += `<div class="ai-out sm"><span class="ai-label">🧠 AI要約</span>${esc(REPORT_SUMMARY[r.id])}</div>`;
+  }
   for (const [k,label] of REPORT_FIELDS) {
     if (!r[k]) continue;
     h += `<div class="kv"><div class="label">${esc(label)}</div><div class="val">${esc(r[k])}</div></div>`;
@@ -444,10 +476,6 @@ function reportCardHtml(r, showDevice=true) {
     <div class="body">
       <div class="kv"><div class="val">${esc(r.dev.model)} / SN:<span class="mono">${esc(r.dev.serial)}</span>　—　${esc(r.dev.location)}</div></div>
       ${reportBodyHtml(r)}
-      <div class="ai-block" style="margin-top:14px;margin-bottom:0">
-        <button class="ai-btn" data-ai-report="${r.id}">🧠 この報告をAI要約</button>
-        <div class="ai-out" data-ai-out-report="${r.id}" ${aiReport[r.id]?"":"hidden"}>${aiReport[r.id]?esc(aiReport[r.id]):""}</div>
-      </div>
     </div>
   </details>`;
 }
@@ -543,10 +571,10 @@ function viewKarte() {
     </div>
   </div>
 
-  <div class="ai-block">
-    <button class="ai-btn big" data-ai-karte="${dev.id}">🧠 このカルテをAI要約（次の担当者向けの申し送りを自動作成）</button>
-    <div class="ai-out" data-ai-out-karte="${dev.id}" ${aiKarte[dev.id]?"":"hidden"}>${aiKarte[dev.id]?esc(aiKarte[dev.id]):""}</div>
-  </div>
+  ${KARTE_SUMMARY[dev.id] ? `<div class="ai-block">
+    <div class="ai-out"><span class="ai-label">🧠 AI申し送りサマリー</span>${esc(KARTE_SUMMARY[dev.id])}</div>
+    <div class="ai-hint">この装置の履歴と残務から自動生成した、次の担当者向けのまとめです。</div>
+  </div>` : ""}
 
   ${openTasks.length ? `<div class="panel-sub">
     <h2>🗂️ この装置の未完了の残務（${openTasks.length}）</h2>
@@ -647,90 +675,6 @@ function render() {
   wire();
 }
 
-/* ============================ AI要約（sample機能） ============================ */
-async function initSample() {
-  try { if (window.claude && window.claude.use) SAMPLE = await claude.use("sample"); }
-  catch (_) { SAMPLE = null; }
-  document.body.classList.toggle("has-sample", !!SAMPLE);
-}
-
-function buildKartePrompt(dev, hosp, hist, tasks) {
-  const L = [];
-  L.push("あなたは医療機器のフィールドサービス記録を引き継ぐベテランエンジニアです。");
-  L.push("以下は装置1台の「カルテ」（基本情報・未対応の残務・作業履歴）です。次に対応する担当者が短時間で状況を把握できるよう、日本語で簡潔に要約してください。");
-  L.push("見出しは【現状】【繰り返し起きている事象・注意点】【未対応の残務】【次回訪問での推奨アクション】の4つ。各項目は2〜4行の箇条書き。記録にある事実のみを使い、推測や誇張はしないこと。");
-  L.push("");
-  L.push(`装置: ${dev.name} / 型番 ${dev.model} / SN ${dev.serial}`);
-  L.push(`設置: ${hosp.name} ${dev.location} / 設置日 ${dev.installed_at} / 次回点検 ${dev.next_pm}`);
-  L.push("");
-  L.push("■ 未対応の残務");
-  if (tasks.length) tasks.forEach(t => L.push(`- [${t.priority}] ${t.content}（期限 ${t.due} / 担当 ${t.eng.name}）${t.note ? " 備考: " + t.note : ""}`));
-  else L.push("- なし");
-  L.push("");
-  L.push("■ 作業履歴（新しい順）");
-  hist.forEach(r => {
-    L.push(`◆ ${fmtDate(r.when)}［${r.visit_type}］担当 ${r.eng.name}`);
-    for (const [k, label] of REPORT_FIELDS) { if (k !== "visit_type" && r[k]) L.push(`  - ${label}: ${r[k]}`); }
-  });
-  return L.join("\n").slice(0, 60000);
-}
-
-function buildReportPrompt(r) {
-  const L = ["次の作業報告を、次の担当者が数秒で把握できるよう日本語で2〜3行に要約してください。記録の事実のみ。", ""];
-  for (const [k, label] of REPORT_FIELDS) { if (r[k]) L.push(`${label}: ${r[k]}`); }
-  return L.join("\n").slice(0, 60000);
-}
-
-function aiErrorText(e) {
-  const hide = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
-  if (hide.includes(e.code)) { document.body.classList.remove("has-sample"); return "この環境ではAI要約を利用できません。"; }
-  if (e.code === "cancelled") return "";
-  if (e.code === "rate_limited") return "混み合っています。少し時間をおいて再度お試しください。";
-  if (e.code === "prompt_too_large") return "内容が多いため要約できませんでした。";
-  return "要約に失敗しました。もう一度お試しください。";
-}
-
-async function runSample(btn, out, prompt, opts, cacheObj, cacheKey) {
-  if (!SAMPLE) return;
-  btn.disabled = true;
-  out.hidden = false; out.classList.add("thinking"); out.textContent = "AIが要約中…（数秒〜1分ほどかかります）";
-  try {
-    const { text } = await SAMPLE(prompt, {
-      ...opts,
-      onText: ({ text }) => { out.classList.remove("thinking"); out.textContent = text; },
-    });
-    out.classList.remove("thinking"); out.textContent = text;
-    cacheObj[cacheKey] = text;
-  } catch (e) {
-    const msg = aiErrorText(e);
-    out.classList.remove("thinking");
-    if (msg) out.textContent = msg; else out.hidden = true;
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function setupAI() {
-  document.getElementById("main").addEventListener("click", (ev) => {
-    const kb = ev.target.closest("[data-ai-karte]");
-    if (kb) {
-      const id = kb.dataset.aiKarte, dev = DMAP[id], hosp = hospOfDevice(dev);
-      const hist = R.filter(r => r.device_id === id);
-      const tasks = T.filter(t => t.device_id === id && t.status !== "完了");
-      const out = document.querySelector(`[data-ai-out-karte="${id}"]`);
-      runSample(kb, out, buildKartePrompt(dev, hosp, hist, tasks), { modelTier: "default" }, aiKarte, id);
-      return;
-    }
-    const rb = ev.target.closest("[data-ai-report]");
-    if (rb) {
-      const id = rb.dataset.aiReport, r = R.find(x => x.id === id);
-      const out = document.querySelector(`[data-ai-out-report="${id}"]`);
-      runSample(rb, out, buildReportPrompt(r), { modelTier: "quick" }, aiReport, id);
-      return;
-    }
-  });
-}
-
 function wire() {
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
   on("sel-hosp","change", e => { karteHosp = e.target.value; karteDev = null; render(); });
@@ -745,6 +689,4 @@ function wire() {
 }
 
 render();
-setupAI();
-initSample();
 </script>
