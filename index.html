@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Brief — 経営ダッシュボード</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --bg-elev: #151a23;
+    --bg-card: #171d27;
+    --bg-hover: #1e2632;
+    --border: #232c3a;
+    --text: #e8edf4;
+    --text-dim: #9aa7b8;
+    --text-faint: #63708396;
+    --accent: #4c8bf5;
+    --accent-soft: #4c8bf51f;
+    --gold: #e0b352;
+    --green: #3fb984;
+    --red: #f0616d;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fa;
+    --bg-elev: #ffffff;
+    --bg-card: #ffffff;
+    --bg-hover: #eef2f8;
+    --border: #e2e7ef;
+    --text: #16202e;
+    --text-dim: #5a6879;
+    --text-faint: #8a97a8;
+    --accent: #2f6fe0;
+    --accent-soft: #2f6fe014;
+    --gold: #b7862a;
+    --green: #1f9d63;
+    --red: #d63a49;
+    --shadow: 0 1px 2px rgba(20,30,50,.06), 0 8px 24px rgba(20,30,50,.08);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN",
+                 "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), #7b5bf0);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 20px; color: #fff;
+    box-shadow: 0 4px 14px var(--accent-soft);
+  }
+  .brand-text h1 { font-size: 17px; margin: 0; letter-spacing: .2px; font-weight: 700; }
+  .brand-text p { font-size: 12px; margin: 0; color: var(--text-dim); }
+
+  .clock { text-align: right; line-height: 1.25; }
+  .clock .time { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+  .clock .date { font-size: 12px; color: var(--text-dim); }
+
+  .icon-btn {
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text); width: 40px; height: 40px; border-radius: 11px;
+    cursor: pointer; display: grid; place-items: center; font-size: 17px;
+    transition: background .15s, border-color .15s, transform .1s;
+  }
+  .icon-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+  .icon-btn:active { transform: scale(.94); }
+  .icon-btn.spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Layout ---------- */
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .greeting { margin: 4px 0 20px; }
+  .greeting h2 { font-size: 26px; margin: 0 0 4px; font-weight: 700; letter-spacing: .2px; }
+  .greeting p { margin: 0; color: var(--text-dim); font-size: 14px; }
+  .greeting .quote { color: var(--gold); font-style: italic; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .chip {
+    padding: 7px 15px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim);
+    cursor: pointer; transition: all .15s;
+  }
+  .chip:hover { color: var(--text); border-color: var(--accent); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+  .feed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); display: flex; flex-direction: column;
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .src-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .cat-domestic { background: var(--red); }
+  .cat-world    { background: var(--accent); }
+  .cat-business { background: var(--green); }
+  .cat-tech     { background: var(--gold); }
+  .card-head .name { font-weight: 700; font-size: 14px; flex: 1; }
+  .card-head .badge {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    color: var(--text-dim); padding: 3px 8px; border-radius: 6px; background: var(--bg-hover);
+  }
+  .items { list-style: none; margin: 0; padding: 6px 0; flex: 1; }
+  .items li { border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
+  .items li:last-child { border-bottom: none; }
+  .items a {
+    display: block; padding: 11px 16px;
+    transition: background .12s; position: relative;
+  }
+  .items a:hover { background: var(--bg-hover); }
+  .items .title { font-size: 13.5px; line-height: 1.5; margin: 0; }
+  .items a:hover .title { color: var(--accent); }
+  .items .meta { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+
+  .card-foot {
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;
+  }
+  .card-foot a { color: var(--accent); font-weight: 600; }
+
+  .state { padding: 22px 16px; text-align: center; color: var(--text-dim); font-size: 13px; }
+  .state .sk { height: 12px; border-radius: 6px; background: var(--bg-hover); margin: 10px 16px;
+    animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+  .state.error { color: var(--red); }
+  .state.error a { color: var(--accent); font-weight: 600; }
+
+  /* ---------- Sidebar ---------- */
+  aside { display: flex; flex-direction: column; gap: 18px; }
+  .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; }
+  .panel h3 { font-size: 13px; margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--border);
+    letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+  .panel h3 .em { font-size: 15px; }
+  .link-list { list-style: none; margin: 0; padding: 6px; }
+  .link-list a {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 9px 10px; border-radius: 9px; font-size: 13px; transition: background .12s;
+  }
+  .link-list a:hover { background: var(--bg-hover); color: var(--accent); }
+  .link-list .sub { font-size: 11px; color: var(--text-faint); }
+  .link-list .arrow { color: var(--text-faint); font-size: 12px; }
+
+  footer { max-width: 1400px; margin: 0 auto; padding: 8px 24px 40px; color: var(--text-faint); font-size: 11.5px; line-height: 1.7; }
+  footer a { color: var(--text-dim); text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark">E</div>
+      <div class="brand-text">
+        <h1>Executive Brief</h1>
+        <p>経営視点で世界を読むダッシュボード</p>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="time" id="clock-time">--:--</div>
+      <div class="date" id="clock-date">読み込み中…</div>
+    </div>
+    <button class="icon-btn" id="refresh-btn" title="ニュースを更新" aria-label="更新">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="theme-btn" title="テーマ切替" aria-label="テーマ切替">
+      <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="greeting">
+    <h2 id="greeting-title">こんにちは</h2>
+    <p>今日の世界とビジネスの動きを、経営層の視点で。 <span class="quote" id="quote"></span></p>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="layout">
+    <main>
+      <div class="feed-grid" id="feed-grid"></div>
+    </main>
+
+    <aside>
+      <div class="panel">
+        <h3><span class="em">📈</span> マーケット & データ</h3>
+        <ul class="link-list" id="market-list"></ul>
+      </div>
+      <div class="panel">
+        <h3><span class="em">🎓</span> エグゼクティブ・リソース</h3>
+        <ul class="link-list" id="resource-list"></ul>
+      </div>
+      <div class="panel">
+        <h3><span class="em">🧭</span> 思考の視点</h3>
+        <ul class="link-list" id="framework-list"></ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer id="footer"></footer>
+
+<script>
+/* =========================================================
+   設定：ニュースフィード
+   ========================================================= */
+const CATEGORIES = {
+  domestic: "国内",
+  world:    "世界",
+  business: "ビジネス・経済",
+  tech:     "テクノロジー",
+};
+
+const FEEDS = [
+  { id:"nhk-main",   name:"NHK 主要ニュース",       cat:"domestic", url:"https://www.nhk.or.jp/rss/news/cat0.xml",                       home:"https://www3.nhk.or.jp/news/" },
+  { id:"nhk-biz",    name:"NHK 経済",               cat:"business", url:"https://www.nhk.or.jp/rss/news/cat5.xml",                       home:"https://www3.nhk.or.jp/news/word/0000860.html" },
+  { id:"itmedia",    name:"ITmedia ビジネス",       cat:"business", url:"https://rss.itmedia.co.jp/rss/2.0/business.xml",                home:"https://www.itmedia.co.jp/business/" },
+  { id:"toyokeizai", name:"東洋経済オンライン",     cat:"business", url:"https://toyokeizai.net/list/feed/rss",                          home:"https://toyokeizai.net/" },
+  { id:"bbc-world",  name:"BBC World",              cat:"world",    url:"https://feeds.bbci.co.uk/news/world/rss.xml",                   home:"https://www.bbc.com/news/world" },
+  { id:"guardian",   name:"The Guardian · World",   cat:"world",    url:"https://www.theguardian.com/world/rss",                         home:"https://www.theguardian.com/world" },
+  { id:"cnbc",       name:"CNBC · Top News",        cat:"business", url:"https://www.cnbc.com/id/100003114/device/rss/rss.html",          home:"https://www.cnbc.com/world/" },
+  { id:"bbc-biz",    name:"BBC Business",           cat:"business", url:"https://feeds.bbci.co.uk/news/business/rss.xml",                home:"https://www.bbc.com/news/business" },
+  { id:"techcrunch", name:"TechCrunch",             cat:"tech",     url:"https://techcrunch.com/feed/",                                  home:"https://techcrunch.com/" },
+];
+
+const MARKETS = [
+  { label:"日経平均 (Nikkei 225)", sub:"Google Finance", url:"https://www.google.com/finance/quote/NI225:INDEXNIKKEI" },
+  { label:"米ドル/円 (USD/JPY)",   sub:"Google Finance", url:"https://www.google.com/finance/quote/USD-JPY" },
+  { label:"S&P 500 / NASDAQ",      sub:"Google Finance", url:"https://www.google.com/finance/quote/.INX:INDEXSP" },
+  { label:"世界市場サマリー",       sub:"Bloomberg Markets", url:"https://www.bloomberg.com/markets" },
+  { label:"高機能チャート",         sub:"TradingView", url:"https://www.tradingview.com/markets/" },
+];
+
+const RESOURCES = [
+  { label:"Harvard Business Review", sub:"経営・リーダーシップの定番", url:"https://hbr.org/" },
+  { label:"McKinsey Insights",       sub:"戦略・業界レポート",         url:"https://www.mckinsey.com/insights" },
+  { label:"The Economist",           sub:"国際情勢・経済分析",         url:"https://www.economist.com/" },
+  { label:"日本経済新聞",             sub:"国内経済の基軸",             url:"https://www.nikkei.com/" },
+  { label:"ダイヤモンド・オンライン", sub:"経営・キャリア",             url:"https://diamond.jp/" },
+  { label:"MIT Sloan Mgmt Review",   sub:"経営とテクノロジー",         url:"https://sloanreview.mit.edu/" },
+];
+
+const FRAMEWORKS = [
+  { label:"PEST 分析", sub:"政治・経済・社会・技術で環境を俯瞰" },
+  { label:"3C 分析",   sub:"市場・競合・自社の関係を捉える" },
+  { label:"SWOT",      sub:"強み・弱み・機会・脅威を整理" },
+  { label:"ファイブフォース", sub:"業界の競争構造を分析" },
+];
+
+const QUOTES = [
+  "「変化はマネジメントできない。先んじるしかない。」— P. ドラッカー",
+  "「戦略とは、何をやらないかを決めることである。」— M. ポーター",
+  "「リスクは、自分が何をしているか分からないことから生まれる。」— W. バフェット",
+  "「計画は無価値だが、計画することは不可欠だ。」— D. アイゼンハワー",
+  "「長期的に考えることが、最大の競争優位になる。」— J. ベゾス",
+];
+
+const PROXIES = [
+  (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+];
+
+/* =========================================================
+   時計・あいさつ
+   ========================================================= */
+function updateClock() {
+  const now = new Date();
+  const days = ["日","月","火","水","木","金","土"];
+  const pad = (n) => String(n).padStart(2, "0");
+  document.getElementById("clock-time").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById("clock-date").textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 (${days[now.getDay()]})`;
+}
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 5 ? "夜遅くまでお疲れさまです"
+        : h < 11 ? "おはようございます"
+        : h < 17 ? "こんにちは"
+        : h < 21 ? "お疲れさまです"
+        : "今日も一日お疲れさまでした";
+  document.getElementById("greeting-title").textContent = g;
+  document.getElementById("quote").textContent = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+}
+
+/* =========================================================
+   フィード取得・解析
+   ========================================================= */
+function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+async function fetchFeedText(url) {
+  let lastErr;
+  for (const build of PROXIES) {
+    try {
+      const res = await fetchWithTimeout(build(url), 14000);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      if (text && text.trim().length > 0) return text;
+      throw new Error("空のレスポンス");
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("取得失敗");
+}
+
+function parseFeed(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+  if (doc.querySelector("parsererror")) throw new Error("解析エラー");
+  let nodes = [...doc.querySelectorAll("item")];
+  const isAtom = nodes.length === 0;
+  if (isAtom) nodes = [...doc.querySelectorAll("entry")];
+  return nodes.map((n) => {
+    const text = (sel) => n.querySelector(sel)?.textContent?.trim() || "";
+    let link = text("link");
+    if (!link) {
+      const l = n.querySelector('link[href]') || n.querySelector("link");
+      link = l?.getAttribute("href") || "";
+    }
+    const date = text("pubDate") || text("published") || text("updated") || text("date") || "";
+    return { title: text("title"), link: link || "#", date };
+  }).filter((it) => it.title);
+}
+
+function relativeTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "たった今";
+  if (diff < 3600) return `${Math.floor(diff/60)}分前`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}時間前`;
+  if (diff < 604800) return `${Math.floor(diff/86400)}日前`;
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+/* =========================================================
+   描画
+   ========================================================= */
+function skeleton() {
+  return `<div class="state"><div class="sk" style="width:85%"></div><div class="sk" style="width:65%"></div><div class="sk" style="width:78%"></div></div>`;
+}
+
+function renderCard(feed) {
+  return `
+    <div class="card" data-cat="${feed.cat}" id="card-${feed.id}">
+      <div class="card-head">
+        <span class="src-dot cat-${feed.cat}"></span>
+        <span class="name">${feed.name}</span>
+        <span class="badge">${CATEGORIES[feed.cat]}</span>
+      </div>
+      <div class="body" id="body-${feed.id}">${skeleton()}</div>
+      <div class="card-foot">
+        <span class="updated" id="upd-${feed.id}">更新中…</span>
+        <a href="${feed.home}" target="_blank" rel="noopener">サイトへ ↗</a>
+      </div>
+    </div>`;
+}
+
+function renderItems(feed, items) {
+  const body = document.getElementById("body-" + feed.id);
+  const upd = document.getElementById("upd-" + feed.id);
+  if (!items.length) {
+    body.innerHTML = `<div class="state error">記事を取得できませんでした。<br><a href="${feed.home}" target="_blank" rel="noopener">${feed.name} を直接開く ↗</a></div>`;
+    upd.textContent = "";
+    return;
+  }
+  const rows = items.slice(0, 6).map((it) => `
+    <li><a href="${it.link}" target="_blank" rel="noopener">
+      <p class="title">${escapeHtml(it.title)}</p>
+      <div class="meta">${relativeTime(it.date)}</div>
+    </a></li>`).join("");
+  body.innerHTML = `<ul class="items">${rows}</ul>`;
+  upd.textContent = "更新 " + new Date().toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
+}
+
+function renderError(feed) {
+  const body = document.getElementById("body-" + feed.id);
+  const upd = document.getElementById("upd-" + feed.id);
+  body.innerHTML = `<div class="state error">読み込みに失敗しました。<br><a href="${feed.home}" target="_blank" rel="noopener">${feed.name} を直接開く ↗</a></div>`;
+  upd.textContent = "";
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+async function loadFeed(feed) {
+  document.getElementById("body-" + feed.id).innerHTML = skeleton();
+  document.getElementById("upd-" + feed.id).textContent = "更新中…";
+  try {
+    const text = await fetchFeedText(feed.url);
+    renderItems(feed, parseFeed(text));
+  } catch (e) {
+    renderError(feed);
+  }
+}
+
+async function loadAll() {
+  const btn = document.getElementById("refresh-btn");
+  btn.classList.add("spin");
+  await Promise.allSettled(FEEDS.map(loadFeed));
+  btn.classList.remove("spin");
+}
+
+/* =========================================================
+   フィルタ
+   ========================================================= */
+let activeFilter = "all";
+function renderFilters() {
+  const el = document.getElementById("filters");
+  const chips = [["all","すべて"], ...Object.entries(CATEGORIES)];
+  el.innerHTML = chips.map(([k,v]) =>
+    `<button class="chip ${k===activeFilter?"active":""}" data-f="${k}">${v}</button>`).join("");
+  el.querySelectorAll(".chip").forEach((c) =>
+    c.addEventListener("click", () => { activeFilter = c.dataset.f; renderFilters(); applyFilter(); }));
+}
+function applyFilter() {
+  document.querySelectorAll(".card").forEach((card) => {
+    card.style.display = (activeFilter === "all" || card.dataset.cat === activeFilter) ? "" : "none";
+  });
+}
+
+/* =========================================================
+   サイドバー
+   ========================================================= */
+function linkRow(item) {
+  return `<li><a href="${item.url}" target="_blank" rel="noopener">
+      <span><div>${item.label}</div>${item.sub?`<div class="sub">${item.sub}</div>`:""}</span>
+      <span class="arrow">↗</span></a></li>`;
+}
+function staticRow(item) {
+  return `<li><a style="cursor:default">
+      <span><div>${item.label}</div><div class="sub">${item.sub}</div></span></a></li>`;
+}
+function renderSidebar() {
+  document.getElementById("market-list").innerHTML = MARKETS.map(linkRow).join("");
+  document.getElementById("resource-list").innerHTML = RESOURCES.map(linkRow).join("");
+  document.getElementById("framework-list").innerHTML = FRAMEWORKS.map(staticRow).join("");
+}
+
+/* =========================================================
+   テーマ
+   ========================================================= */
+function initTheme() {
+  let saved;
+  try { saved = localStorage.getItem("eb-theme"); } catch (e) {}
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+  updateThemeIcon();
+  document.getElementById("theme-btn").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("eb-theme", next); } catch (e) {}
+    updateThemeIcon();
+  });
+}
+function updateThemeIcon() {
+  const light = document.documentElement.getAttribute("data-theme") === "light";
+  document.getElementById("theme-icon").innerHTML = light
+    ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
+    : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+}
+
+/* =========================================================
+   初期化
+   ========================================================= */
+function init() {
+  document.getElementById("footer").innerHTML =
+    `ニュースは各社の公開RSSフィードを、APIキー不要の公開CORSプロキシ（AllOrigins / corsproxy.io）経由で取得しています。` +
+    `記事の著作権は各配信元に帰属します。取得できない場合は各カードの「サイトへ」から配信元をご確認ください。` +
+    `<br>Executive Brief — 経営層を目指す社会人のための情報ダッシュボード.`;
+
+  updateClock(); setInterval(updateClock, 1000 * 20);
+  setGreeting();
+  initTheme();
+  renderSidebar();
+  renderFilters();
+  document.getElementById("feed-grid").innerHTML = FEEDS.map(renderCard).join("");
+  applyFilter();
+  loadAll();
+  document.getElementById("refresh-btn").addEventListener("click", loadAll);
+  setInterval(loadAll, 1000 * 60 * 10); // 10分ごとに自動更新
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
