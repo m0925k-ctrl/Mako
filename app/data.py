@@ -41,6 +41,14 @@ STATUS_COLORS = {"未対応": "#e5484d", "対応中": "#f5a524", "完了": "#30a
 PRIORITY_ORDER = {"高": 0, "中": 1, "低": 2}
 
 
+def _ensure_columns(df: pd.DataFrame, defaults: dict) -> pd.DataFrame:
+    """必須列が無い源（項目の少ない Forms など）でも動くよう、欠けた列を既定値で補う。"""
+    for col, default in defaults.items():
+        if col not in df.columns:
+            df[col] = default
+    return df
+
+
 def _read(name: str):
     """レコード(list[dict])を返す。データ源に応じて切り替える。
 
@@ -80,7 +88,16 @@ def load_devices() -> pd.DataFrame:
 def load_reports() -> pd.DataFrame:
     """作業報告に、装置・病院・作業員の情報を結合して返す。"""
     df = pd.DataFrame(_read("reports.json"))
-    df["submitted_at"] = pd.to_datetime(df["submitted_at"])
+    df = _ensure_columns(
+        df,
+        {
+            "submitted_at": None, "device_id": None, "engineer_id": None,
+            "visit_type": "", "work_done": "", "issue": "", "action": "",
+            "parts": "", "result": "", "handover": "", "photos": None,
+        },
+    )
+    df["photos"] = df["photos"].apply(lambda v: v if isinstance(v, list) else [])
+    df["submitted_at"] = pd.to_datetime(df["submitted_at"], errors="coerce")
 
     dev = load_devices().rename(
         columns={
@@ -119,8 +136,16 @@ def load_reports() -> pd.DataFrame:
 def load_tasks() -> pd.DataFrame:
     """残務（頼まれごと）に装置・病院・担当者を結合して返す。"""
     df = pd.DataFrame(_read("tasks.json"))
-    df["due"] = pd.to_datetime(df["due"])
-    df["requested_at"] = pd.to_datetime(df["requested_at"])
+    df = _ensure_columns(
+        df,
+        {
+            "device_id": None, "assignee_id": None, "content": "",
+            "due": None, "requested_at": None, "status": "未対応",
+            "priority": "中", "related_report": "", "note": "",
+        },
+    )
+    df["due"] = pd.to_datetime(df["due"], errors="coerce")
+    df["requested_at"] = pd.to_datetime(df["requested_at"], errors="coerce")
 
     dev = load_devices().rename(columns={"id": "device_id", "name": "device_name"})
     df = df.merge(

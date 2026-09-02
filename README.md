@@ -83,6 +83,7 @@ MAKO_SOURCE=files streamlit run app/dashboard.py
 ```
 
 列テンプレートと列名マッピング（Forms の質問名が違う場合）は **[templates/](templates/)** を参照。
+**そのまま作れる Forms の設問リスト**は **[docs/forms-build-guide.md](docs/forms-build-guide.md)**。
 
 Oracle 直結は雛形を用意済みです。`app/data_oracle.py` の SQL のテーブル名・列名を
 御社CRMの実スキーマに合わせ、接続情報を環境変数で渡すだけで、画面はそのまま動きます。

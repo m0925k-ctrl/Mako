@@ -30,6 +30,29 @@ import pandas as pd
 # 各テーブルで list になってほしい列（区切り: 改行 / ; / , ）
 _LIST_FIELDS = {"reports": ["photos"]}
 
+# 結合キー列。Forms のドロップダウンが「ID（読みやすいラベル）」形式でも、
+# 先頭のID部分だけ取り出して結合できるようにする。
+_ID_FIELDS = {
+    "reports": ["device_id", "engineer_id"],
+    "tasks": ["device_id", "assignee_id", "related_report"],
+    "devices": ["hospital_id"],
+}
+_ID_SEPARATORS = ["（", "(", "：", ":", "｜", "|", " ", "　"]
+
+# 未入力時の既定値（新規フォームで質問しない項目など）
+_DEFAULTS = {"tasks": {"status": "未対応", "priority": "中"}}
+
+
+def _extract_id(v):
+    """「D-MRI-01（MRI装置／さくら総合病院）」→「D-MRI-01」。"""
+    if v is None:
+        return v
+    s = str(v).strip()
+    for sep in _ID_SEPARATORS:
+        if sep in s:
+            s = s.split(sep)[0].strip()
+    return s
+
 
 def _data_dir() -> Path:
     d = os.environ.get("MAKO_DATA_DIR")
@@ -80,10 +103,22 @@ def fetch(name: str) -> list[dict]:
     df = df.where(pd.notna(df), None)
     records = df.to_dict("records")
 
+    # 結合キー列: 「ID（ラベル）」から ID を取り出す
+    for field in _ID_FIELDS.get(name, []):
+        for r in records:
+            if field in r:
+                r[field] = _extract_id(r.get(field))
+
     # list 化が必要な列（写真など）
     for field in _LIST_FIELDS.get(name, []):
         for r in records:
             r[field] = _split_list(r.get(field))
+
+    # 既定値の補完（未入力/未質問の項目）
+    for field, default in _DEFAULTS.get(name, {}).items():
+        for r in records:
+            if not r.get(field):
+                r[field] = default
 
     # reports に photos 列が無い場合の保険
     if name == "reports":
