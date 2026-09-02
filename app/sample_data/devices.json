@@ -1,0 +1,52 @@
+[
+  {
+    "id": "D-MRI-01",
+    "hospital_id": "H01",
+    "name": "MRI装置",
+    "model": "SIGNA Explorer 1.5T",
+    "serial": "MR15-88213",
+    "location": "放射線科 MRI室",
+    "installed_at": "2021-04-10",
+    "next_pm": "2026-10-15"
+  },
+  {
+    "id": "D-CT-01",
+    "hospital_id": "H01",
+    "name": "CTスキャナ",
+    "model": "Aquilion Lightning 80列",
+    "serial": "CT80-40219",
+    "location": "放射線科 CT室",
+    "installed_at": "2022-09-01",
+    "next_pm": "2026-09-20"
+  },
+  {
+    "id": "D-ENDO-01",
+    "hospital_id": "H02",
+    "name": "内視鏡システム",
+    "model": "EVIS X1 CV-1500",
+    "serial": "EN15-10234",
+    "location": "内視鏡室",
+    "installed_at": "2023-03-15",
+    "next_pm": "2026-11-05"
+  },
+  {
+    "id": "D-INC-01",
+    "hospital_id": "H03",
+    "name": "保育器",
+    "model": "Dräger Isolette C2000",
+    "serial": "IC20-77120",
+    "location": "NICU",
+    "installed_at": "2020-06-20",
+    "next_pm": "2026-09-12"
+  },
+  {
+    "id": "D-MON-05",
+    "hospital_id": "H03",
+    "name": "生体情報モニタ",
+    "model": "BSM-6000",
+    "serial": "BS60-22014",
+    "location": "ICU ベッド5",
+    "installed_at": "2019-11-01",
+    "next_pm": "2026-10-01"
+  }
+]

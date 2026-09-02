@@ -1,0 +1,5 @@
+[
+  { "id": "E01", "name": "佐藤 健一", "team": "画像診断チーム", "photo": "engineer_sato" },
+  { "id": "E02", "name": "鈴木 大輔", "team": "生体機器チーム", "photo": "engineer_suzuki" },
+  { "id": "E03", "name": "田中 陽子", "team": "画像診断チーム", "photo": "engineer_tanaka" }
+]
