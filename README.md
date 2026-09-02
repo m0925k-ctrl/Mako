@@ -10,11 +10,9 @@
 ### スマホ（Android）で見る — GitHub Pages で公開する
 
 1. GitHub でこのリポジトリの **Settings → Pages** を開く
-2. **Build and deployment → Source** を **「GitHub Actions」** に設定
-3. 同梱の `.github/workflows/pages.yml` が自動で公開します
-4. 数十秒後、`https://m0925k-ctrl.github.io/Mako/` のような URL でスマホのブラウザから閲覧できます
-
-> ※ より簡単に済ませたい場合は Source を「Deploy from a branch」にし、ブランチと `/ (root)` を選ぶだけでも公開できます。
+2. **Build and deployment → Source** を **「Deploy from a branch」** に設定
+3. **Branch** で `claude/business-dashboard-executives-c7vuyf`、フォルダは `/ (root)` を選び **Save**
+4. 1〜2 分後、`https://m0925k-ctrl.github.io/Mako/` の URL でスマホのブラウザから閲覧できます
 
 ### ホーム画面に追加（アプリのように使う）
 
