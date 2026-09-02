@@ -476,9 +476,12 @@ const QUOTES = [
   "「長期的に考えることが、最大の競争優位になる。」— J. ベゾス",
 ];
 
-const PROXIES = [
-  (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+// カスタム（ユーザー追加）フィードをブラウザから取得する際の中継先。
+// 動作確認できたものを優先し、複数を順に試します。
+const RAW_PROXIES = [
   (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+  (u) => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
+  (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
 ];
 
 /* =========================================================
@@ -540,18 +543,34 @@ function fetchWithTimeout(url, ms) {
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
 }
 
-async function fetchFeedText(url) {
-  let lastErr;
-  for (const build of PROXIES) {
+// カスタムフィードの記事一覧を取得（複数の中継先＋JSON方式を順に試す）
+async function fetchFeedItems(url) {
+  // 1) 生のRSS/XMLを中継取得して解析
+  for (const build of RAW_PROXIES) {
     try {
-      const res = await fetchWithTimeout(build(url), 14000);
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      const res = await fetchWithTimeout(build(url), 12000);
+      if (!res.ok) continue;
       const text = await res.text();
-      if (text && text.trim().length > 0) return text;
-      throw new Error("空のレスポンス");
-    } catch (e) { lastErr = e; }
+      if (text && text.trim().length > 0) {
+        const items = parseFeed(text);
+        if (items.length) return items;
+      }
+    } catch (e) { /* 次の中継先へ */ }
   }
-  throw lastErr || new Error("取得失敗");
+  // 2) 予備: rss2json（RSSをJSONに変換して返すサービス）
+  try {
+    const res = await fetchWithTimeout(
+      "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(url), 12000);
+    if (res.ok) {
+      const j = await res.json();
+      if (j && j.status === "ok" && Array.isArray(j.items)) {
+        return j.items
+          .map((it) => ({ title: (it.title || "").trim(), link: it.link || "#", date: it.pubDate || "" }))
+          .filter((x) => x.title);
+      }
+    }
+  } catch (e) { /* あきらめる */ }
+  throw new Error("取得失敗");
 }
 
 function parseFeed(xmlText) {
@@ -627,7 +646,11 @@ function renderItems(feed, items) {
 function renderError(feed) {
   const body = document.getElementById("body-" + feed.id);
   const upd = document.getElementById("upd-" + feed.id);
-  body.innerHTML = `<div class="state error">読み込みに失敗しました。<br><a href="${feed.home}" target="_blank" rel="noopener">${feed.name} を直接開く ↗</a></div>`;
+  const custom = String(feed.id).startsWith("custom-");
+  const hint = custom
+    ? `取得できませんでした。RSS の URL が正しいか（サイトURLではなく<b>フィードのURL</b>か）ご確認ください。<br><a href="${escapeHtml(feed.url)}" target="_blank" rel="noopener">登録したURLを開く ↗</a>`
+    : `読み込みに失敗しました。<br><a href="${feed.home}" target="_blank" rel="noopener">${escapeHtml(feed.name)} を直接開く ↗</a>`;
+  body.innerHTML = `<div class="state error">${hint}</div>`;
   upd.textContent = "";
 }
 
@@ -645,8 +668,7 @@ async function loadFeed(feed) {
   document.getElementById("body-" + feed.id).innerHTML = skeleton();
   document.getElementById("upd-" + feed.id).textContent = "更新中…";
   try {
-    const text = await fetchFeedText(feed.url);
-    renderItems(feed, parseFeed(text));
+    renderItems(feed, await fetchFeedItems(feed.url));
   } catch (e) {
     renderError(feed);
   }
