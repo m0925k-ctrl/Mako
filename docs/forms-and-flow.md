@@ -4,8 +4,17 @@
 PC/スマホで閲覧（**ダッシュボード**）を、一本につなぐための設計書です。
 実装はこの順（マスタ → Forms → SharePoint → Power Automate → ダッシュボード）で進めます。
 
+### 使う環境（前提）
+- **AI**：**Copilot Enterprise**（キヤノン側テナント）。自動要約はフロー内の
+  **AI Builder（GPTプロンプト）／ Copilot Studio** を利用（＝同じテナント・データ境界内）。
+- **CRM（顧客・装置マスタ）**：**Oracle CRM** から取り込む（両社の社員が取得可能）。
+- **入力/蓄積/自動化/閲覧**：Microsoft 365（Forms / SharePoint / Power Automate）。
+
 ```mermaid
 flowchart LR
+  subgraph CRM[Oracle CRM]
+    OR[(顧客・装置マスタ)]
+  end
   subgraph 集める
     F1[作業報告フォーム\nMicrosoft Forms]
     F2[残務登録フォーム\nMicrosoft Forms]
@@ -14,22 +23,23 @@ flowchart LR
     L1[(作業報告リスト)]
     L2[(残務リスト)]
     LIB[[写真ライブラリ\n装置ごとフォルダ]]
-    M1[(病院マスタ)]
+    M1[(顧客/病院マスタ)]
     M2[(装置マスタ)]
     M3[(作業員マスタ)]
   end
   subgraph 整理[Power Automate]
     PA1{{回答→リスト転記\n写真をフォルダ移動}}
-    PA2{{AI要約 生成・保存\n※任意}}
+    PA2{{AI要約 生成・保存\nAI Builder / Copilot Studio}}
   end
   subgraph 見る
     D1[Mako ダッシュボード\nStreamlit / Web / Power BI]
   end
 
+  OR -->|定期取込 or 参照| M1 & M2
   F1 --> PA1 --> L1
   F1 -->|写真| PA1 --> LIB
   F2 --> PA1 --> L2
-  L1 --> PA2
+  L1 --> PA2 --> L1
   M1 & M2 & M3 --> D1
   L1 & L2 & LIB --> D1
 ```
@@ -49,9 +59,13 @@ Forms の質問項目は、下記リストの列に1対1で対応させます。
 
 ---
 
-## 1. マスタ（先に用意する3リスト）
+## 1. マスタ（顧客・装置は Oracle CRM が正）
 
-現場の人が「選ぶだけ」で入力できるよう、病院・装置・作業員は先にマスタ化します。
+現場の人が「選ぶだけ」で入力できるよう、顧客/病院・装置・作業員をマスタ化します。
+**顧客・装置は Oracle CRM が正データ**なので、手入力せず CRM から取り込みます（§1-4）。
+作業員マスタは M365（Entra ID）や人事情報から。
+
+下記は SharePoint 側に持つ場合の列定義です（CRM を直接参照する構成でも列の考え方は同じ）。
 
 ### 病院マスタ（SharePoint リスト: `Hospitals`）
 | 列 | 型 | 例 |
@@ -85,6 +99,19 @@ Forms の質問項目は、下記リストの列に1対1で対応させます。
 | 氏名 | 1行テキスト | 佐藤 健一 |
 | チーム | 1行テキスト | 画像診断チーム |
 | 顔写真 | 画像 / ハイパーリンク | （社員名簿の写真URL） |
+
+### 1-4. Oracle CRM からの取り込み
+顧客・装置マスタは Oracle CRM から取得（両社の社員が取得可能とのこと）。実装の選択肢：
+
+- **案ア（自動・推奨）**：Power Automate の **Oracle Database コネクタ**で CRM を定期取得し、
+  SharePoint の `Hospitals` / `Devices` リストへ upsert（1日1回など）。ダッシュボードは SharePoint を読む。
+- **案イ（手軽）**：現状「両社の社員ができる」CRM エクスポート（CSV等）を所定フォルダに置き、
+  Power Automate（または取込スクリプト）で SharePoint へ反映。まずはこれで開始も可。
+- **案ウ（直参照）**：ダッシュボード（Streamlit版）から Oracle を直接読む。CRM が常に正になるが、
+  DB 接続情報・権限管理が必要。
+
+> 確認したい点：CRM から引ける具体的な項目（顧客・装置・型番・SN・設置場所・契約情報など）と、
+> 取得方法（Oracleへ直接接続できるのか／エクスポート運用か）。ここが決まると取り込み方式を確定できます。
 
 ---
 
@@ -184,14 +211,20 @@ Microsoft Forms の選択肢は**静的**で、装置マスタと自動連動し
 > **要約は登録時に1回だけ生成して SharePoint に保存し、閲覧者は読むだけ**にする。
 
 ### 案B（推奨・本番）：登録時に生成して SharePoint に保存
-- Power Automate（フロー①の最後）から AI を呼び、要約を生成して
+- Power Automate（フロー①の最後）から**御社環境内の AI**を呼び、要約を生成して
   `WorkReports.AI要約` 列／装置カルテ用のサマリーとして保存する。
-- AI の呼び先はどれでも可：**Azure OpenAI**（M365 と相性良）／**Claude API**／
-  **AI Builder**。会社が1つ API キー（またはサービス接続）を持てばよい。
+- **AI エンジン＝ Copilot Enterprise と同じテナントの Power Platform AI**：
+  - **AI Builder の「GPT でテキストを作成」／ カスタムプロンプト** … Power Automate から
+    直接呼べる。要約用のプロンプトを1つ作って渡すだけ。**第一候補**。
+  - **Copilot Studio** … 要約用エージェント/プロンプトを作り、フローから呼ぶ。
+  - いずれもキヤノン側テナント・データ境界内で動くため、外部API契約・キー管理が不要。
+    データが社外に出ない点も社内利用向き。
 - **メリット**：誰でもアカウント不要で同じ要約を閲覧できる。検索・印刷・PDF化も可能。
 - **プロンプト例（カルテ要約）**：「次は装置1台の基本情報・未対応の残務・作業履歴です。
   次の担当者向けに【現状】【繰り返す事象・注意点】【未対応の残務】【次回の推奨アクション】
   の4見出しで簡潔に要約。記録の事実のみ」＋（装置情報＋履歴のテキスト）。
+- **確認したい点**：AI Builder / Copilot Studio が Power Automate から使えるライセンス状況。
+  使えない場合は、Copilot Enterprise 側の別の呼び出し口を一緒に確認します。
 
 ### 案A（参考）：閲覧時にオンデマンド生成
 - 閲覧者自身の Claude アカウントで、その場で生成する方式。
@@ -219,12 +252,12 @@ Microsoft Forms の選択肢は**静的**で、装置マスタと自動連動し
 
 ## 7. 段階的な進め方（おすすめ順）
 
-1. **マスタ3つ**（病院・装置・作業員）を SharePoint リストで作る
+1. **マスタ取り込み**：Oracle CRM から顧客・装置を SharePoint へ（§1-4／まずは案イの手動取込でも可）。作業員マスタも用意
 2. **作業報告フォーム**を作り、Power Automate で `WorkReports` へ転記（写真も）
 3. **残務フォーム**＋ `Tasks` 転記
 4. ダッシュボードを SharePoint 読み込みに接続（`app/data.py` 差し替え）
-5. **AI要約** 案A を利用（案Bは必要になったら）
-6. 規模拡大時に入力を **Power Apps** 化（動的ドロップダウン）
+5. **AI要約（案B）**：Power Automate＋AI Builder/Copilot Studio で登録時に生成し保存
+6. Oracle 取込を自動化（案ア）、規模拡大時は入力を **Power Apps** 化（動的ドロップダウン）
 
 ---
 
