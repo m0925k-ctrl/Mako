@@ -180,28 +180,41 @@ ODBC で参照する。`app/repositories/cases.py`：
 - 切り替えは `MAKO_CASE_BACKEND=json|access`。失敗時は JSON へ自動フォールバック
   （`MAKO_STRICT_BACKEND=1` で禁止）。
 
-**画面で確認できたフィールドのマッピング**（`ACROS_NOAHフィールド情報` → ケース形）
+**確定フィールドのマッピング**（現場クエリ「クエリ3」＝ `ACROS_NOAHフィールド情報`＋`ACROS_タスク` 結合 → ケース形）
 
 | Access フィールド | ケース形のキー | 備考 |
 |---|---|---|
-| SR番号 | `case_id` | 受付番号 |
+| SR番号 | `case_id` | 受付番号（同一SR番号の複数タスク行を1ケースに集約） |
+| 支社 / SC | `dispatch.area` / `branch` / `sc` | 拠点 |
 | 受付日 | `received_at` | |
 | お客様ID | `customer_id` | 得意先マスタ結合キー |
 | 得意先名 | `customer_name` | |
+| BU | `modality` | XR/CT/NM/TH/INS/HEP… |
 | システム形式名 | `model` / `model_code` | `A1020DB_形式名説明表` で名称補完可 |
 | システム製造番号 | `customer_equipment_id` | 号機特定 |
-| 契約カテゴリ | `sla_level` | SLA判定の入力 |
-| リモメン有無 | `remote_maintenance.available` | |
-| 問題要約 + 受付内容 | `symptom` | 連結して表示 |
+| ユニット形式名/製造番号 | `unit_model_code` / `unit_serial` | |
+| 契約カテゴリ | `contract_category` | 保守契約/無し（SLA判定入力） |
+| リモメン有無 | `remote_maintenance.available` | 有り/無し |
+| 問題要約 + 受付内容 | `symptom` | 連結表示 |
+| システムダウン | `system_down` | YES/NO（SLA判定入力） |
+| 重要度 | `sla_level` | 緊急度: 即時対応要求／即日対応／翌日で可／期日指定／いつでも可 |
 | 訪問予定日時 | `dispatch.estimated_arrival` | |
-| 重要度 | （SLA/severity） | |
 | 作業担当コード | `assignee` / `dispatch.fs_contact` | `SENS_ユーザ情報` で氏名補完可 |
+| タスクステータス | `status` | 完了/未完了 |
+| タスク摘要/報告番号/到着時刻/復旧日時 | `work_history[]` | タスク行から作業履歴を構築 |
+
+> **エラーコード列は存在しない**：障害内容は `問題要約`（エラー発生/保守点検/据付依頼…）と
+> `受付内容`（"M64エラー発生" 等）のテキスト。よって「コードで開く／検索」は本番では
+> `受付内容`・`問題要約`・`システム形式名` への **LIKE テキスト検索**（`find_by_error`）となる。
+> TERRA連携やエラー別の部品判定率は、この前提で別途設計する（フェーズ2）。
+
+> **SLA判定**：`重要度`（緊急度）＋`システムダウン`(YES/NO)＋`契約カテゴリ`(保守契約有無)を
+> 入力に、既存の SLA判定マトリクスで判定する想定。
 
 **後続フェーズで別テーブル結合**（現状は空＋TODO）：
-`install_base`←`ACROS_既納品システム情報`、`work_history`←`ACROS_サービス要求`/`ACROS_タスク`、
-部品判定率・在庫←`ACROS_部品要求`/`品目`/`部品対応限度マスタ`/`発注残`、
-`error_code`←NOAH 該当フィールド（`MAKO_ACCESS_ERROR_FIELD` で指定）、
-`hot_issue_site`←Hot Issue 管理ソース。
+`install_base`←`ACROS_既納品システム情報`、
+部品交換/判定率・在庫←`ACROS_部品要求`/`品目`/`部品対応限度マスタ`/`発注残`（SR番号・タスク番号で結合）、
+`hot_issue_site`←Hot Issue 管理ソース、`work_history` の部品←`ACROS_部品要求`。
 
 **接続設定（`.env.example` 参照）**
 

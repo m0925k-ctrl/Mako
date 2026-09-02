@@ -4,18 +4,34 @@
 
 - ``json``   : ``app/data/cases.json`` を読む開発用モック(既定)。
 - ``access`` : 既存 Access DB（VBA と同じデータ源）を ODBC で読む本番想定実装。
-               画面で確認できた ``ACROS_NOAHフィールド情報`` のフィールドを
-               コンソールのケース形へマッピングする。
+               現場のクエリ(クエリ3 相当。ACROS_NOAHフィールド情報 と ACROS_タスク を
+               結合した1本)をそのまま読み、SR番号ごとに作業履歴を集約する。
 
-返却する辞書は console._assemble が期待する形に合わせる:
-    case_id, customer_id, customer_name, customer_equipment_id, modality, model,
-    model_code, symptom, error_code, received_at, status, assignee, sla_level,
-    hot_issue_site, next_inspection, remote_maintenance{...}, dispatch{...},
-    install_base[], work_history[]
+■ 確認済みの実スキーマ(クエリ3 の列)と、コンソールのケース形への対応
+    支社 / SC                 → dispatch.area(拠点), branch, sc
+    SR番号                    → case_id（受付番号）
+    受付日                    → received_at
+    お客様ID                  → customer_id（得意先マスタ結合キー）
+    得意先名                  → customer_name
+    BU                        → modality（XR/CT/NM/TH/INS/HEP…）
+    システム形式名            → model / model_code
+    システム製造番号          → customer_equipment_id（号機）
+    ユニット形式名/製造番号   → unit_model_code / unit_serial
+    契約カテゴリ              → contract_category（保守契約/無し）
+    リモメン有無              → remote_maintenance.available（有り/無し）
+    問題要約 + 受付内容        → symptom
+    システムダウン            → system_down（YES/NO）… SLA判定入力
+    重要度                    → sla_level（緊急度: 即時対応要求…いつでも可）
+    訪問予定日時              → dispatch.estimated_arrival
+    作業担当コード            → assignee（SENS_ユーザ情報 で氏名補完可）
+    タスクステータス          → status（完了/未完了）
+    タスク摘要/報告番号/到着時刻/復旧日時/作業時間/対応日数 → work_history[]
 
-Access バックエンドでは、単票で取れる項目のみを埋め、インストールベース/作業履歴など
-別テーブル(ACROS_既納品システム情報 / ACROS_サービス要求 等)由来のものは
-後続フェーズで結合する(現状は空リスト＋TODO)。
+■ 注意
+    - 専用の「エラーコード」列は無い（障害内容は 問題要約 / 受付内容 のテキスト）。
+      よって従来の "コード検索" は本番ではテキスト検索(find_by_error=LIKE)になる。
+    - install_base(ACROS_既納品システム情報)・部品判定率/在庫(ACROS_部品要求 等)は
+      別テーブル結合の後続フェーズ（現状は空＋TODO）。
 """
 from __future__ import annotations
 
@@ -28,14 +44,18 @@ from app.repositories.odbc import build_access_conn_str, connect, rows_as_dicts
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
-# ACROS_NOAHフィールド情報 → ケース形 の既定マッピング(実スキーマに合わせて調整可)。
-# 値は Access 上のフィールド名(日本語)。SQL では [列名] AS 別名 で英語化する。
+# 読み込み元。現場の集約クエリ名(例: クエリ3 を保存した安定名 / Q_サービス要求 等)を指定推奨。
 ACCESS_TABLE = os.getenv("MAKO_ACCESS_CASE_TABLE", "ACROS_NOAHフィールド情報")
-ACCESS_COLMAP = {
+
+# クエリ3 で確認できた実フィールド名（存在確認・ドキュメント用途。SQL は SELECT * で読む）。
+ACCESS_FIELDS = {
     "case_id": "SR番号",
+    "branch": "支社",
+    "sc": "SC",
     "received_at": "受付日",
-    "customer_code": "お客様ID",
+    "customer_id": "お客様ID",
     "customer_name": "得意先名",
+    "modality": "BU",
     "model_code": "システム形式名",
     "serial": "システム製造番号",
     "unit_model_code": "ユニット形式名",
@@ -47,10 +67,16 @@ ACCESS_COLMAP = {
     "system_down": "システムダウン",
     "visit_at": "訪問予定日時",
     "severity": "重要度",
-    "engineer_code": "作業担当コード",
-    # error_code は NOAH 上の該当フィールドが確認でき次第マッピングする(下記 env で指定可)
-    "error_code": os.getenv("MAKO_ACCESS_ERROR_FIELD", ""),
+    "task_no": "タスク番号",
+    "assignee_code": "作業担当コード",
+    "task_summary": "タスク摘要",
+    "report_no": "報告番号",
+    "arrived_at": "到着時刻",
+    "recovered_at": "復旧日時",
+    "task_status": "タスクステータス",
 }
+
+_TRUE_TOKENS = {"有", "有り", "あり", "1", "y", "yes", "true"}
 
 
 class CaseRepository(ABC):
@@ -104,35 +130,56 @@ class AccessCaseRepository(CaseRepository):
 
     def __init__(self) -> None:
         self._conn_str = build_access_conn_str()
-        # 接続確認(失敗時はファクトリでフォールバック判定)
-        connect(self._conn_str).close()
+        connect(self._conn_str).close()  # 接続確認(失敗時はファクトリでフォールバック)
 
-    def _select(self) -> str:
-        cols = ", ".join(
-            f"[{src}] AS {alias}"
-            for alias, src in ACCESS_COLMAP.items()
-            if src  # 未マッピング(空文字)は除外
-        )
-        return f"SELECT {cols} FROM [{ACCESS_TABLE}]"
+    @staticmethod
+    def _g(row: dict, alias: str):
+        """ACCESS_FIELDS のエイリアスで行から値を取る(列名は小文字化済み)。"""
+        col = ACCESS_FIELDS.get(alias, alias)
+        return row.get(col.lower())
 
-    def _to_case(self, r: dict) -> dict:
-        """Access の1行(別名済み)をコンソールのケース形へ変換する。"""
-        symptom = " / ".join(s for s in [r.get("symptom_summary"), r.get("symptom_detail")] if s)
-        remote_avail = str(r.get("remote_flag") or "").strip() in ("有", "1", "True", "あり", "Y")
+    @staticmethod
+    def _s(v) -> str:
+        return "" if v is None else str(v)
+
+    @classmethod
+    def _to_case(cls, rows: list[dict]) -> dict:
+        """同一 SR番号 の複数行(タスク単位)を1ケースへ集約する。"""
+        g = cls._g
+        h = rows[0]
+        remote_avail = cls._s(g(h, "remote_flag")).strip().lower() in _TRUE_TOKENS
+        symptom = " / ".join(s for s in [cls._s(g(h, "symptom_summary")), cls._s(g(h, "symptom_detail"))] if s)
+        area = " ".join(s for s in [cls._s(g(h, "branch")), cls._s(g(h, "sc"))] if s)
+
+        work_history = []
+        for r in rows:
+            if not (g(r, "task_no") or g(r, "task_summary") or g(r, "report_no")):
+                continue
+            date = cls._s(g(r, "arrived_at") or g(r, "recovered_at"))[:10]
+            work_history.append({
+                "date": date,
+                "summary": cls._s(g(r, "task_summary")) or cls._s(g(r, "symptom_summary")),
+                "engineer": cls._s(g(r, "assignee_code")),
+                "parts_replaced": [],  # TODO: ACROS_部品要求 を SR番号/タスク番号で結合
+                "status": cls._s(g(r, "task_status")),
+                "report_no": cls._s(g(r, "report_no")),
+                "recovered_at": cls._s(g(r, "recovered_at")),
+            })
+
         return {
-            "case_id": r.get("case_id"),
-            "customer_id": r.get("customer_code"),  # 得意先マスタ結合キー
-            "customer_name": r.get("customer_name"),
-            "customer_equipment_id": r.get("serial"),
-            "modality": None,  # TODO: A1020DB_形式名説明表 等から判定
-            "model": r.get("model_code"),
-            "model_code": r.get("model_code"),
+            "case_id": cls._s(g(h, "case_id")),
+            "customer_id": cls._s(g(h, "customer_id")),
+            "customer_name": cls._s(g(h, "customer_name")),
+            "customer_equipment_id": cls._s(g(h, "serial")),
+            "modality": cls._s(g(h, "modality")),  # BU
+            "model": cls._s(g(h, "model_code")),
+            "model_code": cls._s(g(h, "model_code")),
             "symptom": symptom,
-            "error_code": (r.get("error_code") or None),
-            "received_at": str(r.get("received_at") or ""),
-            "status": None,  # TODO: ACROS_サービス要求 のステータス
-            "assignee": r.get("engineer_code"),
-            "sla_level": r.get("contract_category"),
+            "error_code": None,  # 専用列なし(受付内容テキスト内)
+            "received_at": cls._s(g(h, "received_at")),
+            "status": cls._s(g(h, "task_status")),
+            "assignee": cls._s(g(h, "assignee_code")),
+            "sla_level": cls._s(g(h, "severity")),  # 緊急度(即時対応要求 等)
             "hot_issue_site": False,  # TODO: Hot Issue 管理ソースと突合
             "next_inspection": None,  # TODO: 保守計画
             "remote_maintenance": {
@@ -142,36 +189,63 @@ class AccessCaseRepository(CaseRepository):
                 "last_alert": None,  # TODO: リモメン基盤の直前アラート
             },
             "dispatch": {
-                "area": None,  # TODO: ACROS_リソースグループ
-                "fs_contact": r.get("engineer_code"),
+                "area": area,
+                "fs_contact": cls._s(g(h, "assignee_code")),
                 "night_contact": None,
-                "estimated_arrival": str(r.get("visit_at") or ""),
+                "estimated_arrival": cls._s(g(h, "visit_at")),
             },
             "install_base": [],  # TODO: ACROS_既納品システム情報
-            "work_history": [],  # TODO: ACROS_サービス要求 / ACROS_タスク
+            "work_history": work_history,
+            # 実データ由来の補助項目(将来 UI で活用)
+            "contract_category": cls._s(g(h, "contract_category")),
+            "system_down": cls._s(g(h, "system_down")),
+            "unit_model_code": cls._s(g(h, "unit_model_code")),
+            "branch": cls._s(g(h, "branch")),
+            "sc": cls._s(g(h, "sc")),
         }
 
+    @staticmethod
+    def _group_by_case(rows: list[dict]) -> list[list[dict]]:
+        groups: dict[str, list[dict]] = {}
+        order: list[str] = []
+        col = ACCESS_FIELDS["case_id"].lower()
+        for r in rows:
+            key = str(r.get(col))
+            if key not in groups:
+                groups[key] = []
+                order.append(key)
+            groups[key].append(r)
+        return [groups[k] for k in order]
+
     def get(self, case_id: str) -> dict | None:
+        col = ACCESS_FIELDS["case_id"]
         with connect(self._conn_str) as conn:
             cur = conn.cursor()
-            cur.execute(f"{self._select()} WHERE [{ACCESS_COLMAP['case_id']}] = ?", [case_id])
+            cur.execute(f"SELECT * FROM [{ACCESS_TABLE}] WHERE [{col}] = ?", [case_id])
             rows = rows_as_dicts(cur)
-            return self._to_case(rows[0]) if rows else None
+        return self._to_case(rows) if rows else None
 
     def find_by_error(self, code: str) -> list[dict]:
-        field = ACCESS_COLMAP.get("error_code")
-        if not field:
-            return []  # error_code 列が未マッピングの間は空
+        """専用エラーコード列が無いため、受付内容/問題要約/形式名をテキスト検索する。"""
+        like = f"%{code}%"
+        f = ACCESS_FIELDS
+        sql = (
+            f"SELECT * FROM [{ACCESS_TABLE}] "
+            f"WHERE [{f['symptom_detail']}] LIKE ? OR [{f['symptom_summary']}] LIKE ? "
+            f"OR [{f['model_code']}] LIKE ?"
+        )
         with connect(self._conn_str) as conn:
             cur = conn.cursor()
-            cur.execute(f"{self._select()} WHERE [{field}] = ?", [code])
-            return [self._to_case(r) for r in rows_as_dicts(cur)]
+            cur.execute(sql, [like, like, like])
+            rows = rows_as_dicts(cur)
+        return [self._to_case(g) for g in self._group_by_case(rows)]
 
     def list_all(self, limit: int = 500) -> list[dict]:
         with connect(self._conn_str) as conn:
             cur = conn.cursor()
-            cur.execute(f"SELECT TOP {int(limit)} {self._select()[len('SELECT '):]}")
-            return [self._to_case(r) for r in rows_as_dicts(cur)]
+            cur.execute(f"SELECT TOP {int(limit)} * FROM [{ACCESS_TABLE}]")
+            rows = rows_as_dicts(cur)
+        return [self._to_case(g) for g in self._group_by_case(rows)]
 
 
 # --------------------------------------------------------------------------

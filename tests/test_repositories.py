@@ -2,7 +2,8 @@
 import pytest
 
 from app.repositories.cases import (
-    ACCESS_COLMAP,
+    ACCESS_FIELDS,
+    AccessCaseRepository,
     JsonCaseRepository,
     get_case_repository,
 )
@@ -73,9 +74,37 @@ def test_case_access_falls_back_when_unavailable(monkeypatch):
     assert isinstance(get_case_repository(), JsonCaseRepository)
 
 
-def test_access_colmap_covers_visible_fields():
-    # 画面で確認できた ACROS_NOAHフィールド情報 の主要フィールドが対応づいていること。
-    assert ACCESS_COLMAP["case_id"] == "SR番号"
-    assert ACCESS_COLMAP["customer_name"] == "得意先名"
-    assert ACCESS_COLMAP["model_code"] == "システム形式名"
-    assert ACCESS_COLMAP["remote_flag"] == "リモメン有無"
+def test_access_fields_match_confirmed_schema():
+    # クエリ3 で確認できた実フィールド名に対応づいていること。
+    assert ACCESS_FIELDS["case_id"] == "SR番号"
+    assert ACCESS_FIELDS["customer_name"] == "得意先名"
+    assert ACCESS_FIELDS["model_code"] == "システム形式名"
+    assert ACCESS_FIELDS["remote_flag"] == "リモメン有無"
+    assert ACCESS_FIELDS["modality"] == "BU"
+    assert ACCESS_FIELDS["severity"] == "重要度"
+    assert ACCESS_FIELDS["task_status"] == "タスクステータス"
+
+
+def test_access_to_case_aggregates_tasks():
+    # 同一SR番号の複数タスク行が1ケース＋作業履歴に集約されること(実列名の行で検証)。
+    rows = [
+        {"sr番号": "27760", "支社": "AH", "sc": "CE0", "受付日": "2007/05/17 9:24:00",
+         "お客様id": "35247350000-020", "得意先名": "千葉県済生会 習志野病院", "bu": "INS",
+         "システム形式名": "TFS-7000", "システム製造番号": "A5537@@@", "契約カテゴリ": "保守契約",
+         "リモメン有無": "無し", "問題要約": "運用保守対応", "受付内容": "運用保守対応",
+         "システムダウン": "NO", "重要度": "いつでも可", "タスク番号": "43936",
+         "タスク摘要": "運用保守対応", "報告番号": "C540531705", "到着時刻": "2007/05/17",
+         "復旧日時": "", "タスクステータス": "完了", "作業担当コード": "86452"},
+        {"sr番号": "27760", "タスク番号": "43937", "タスク摘要": "追加作業",
+         "報告番号": "C540531706", "到着時刻": "2007/05/18", "タスクステータス": "完了",
+         "作業担当コード": "86452"},
+    ]
+    case = AccessCaseRepository._to_case(rows)
+    assert case["case_id"] == "27760"
+    assert case["customer_name"] == "千葉県済生会 習志野病院"
+    assert case["modality"] == "INS"
+    assert case["model_code"] == "TFS-7000"
+    assert case["remote_maintenance"]["available"] is False
+    assert case["sla_level"] == "いつでも可"
+    assert len(case["work_history"]) == 2
+    assert case["work_history"][0]["engineer"] == "86452"
