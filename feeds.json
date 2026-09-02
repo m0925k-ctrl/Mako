@@ -6,6 +6,8 @@
     { "id": "aljazeera",      "name": "Al Jazeera",                    "cat": "world",    "url": "https://www.aljazeera.com/xml/rss/all.xml",                                          "home": "https://www.aljazeera.com/" },
 
     { "id": "gnews-biz",      "name": "Google ニュース · ビジネス",     "cat": "domestic", "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ja&gl=JP&ceid=JP:ja","home": "https://news.google.com/" },
+    { "id": "yahoo-top",      "name": "Yahoo!ニュース · 主要",          "cat": "domestic", "url": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",                                  "home": "https://news.yahoo.co.jp/" },
+    { "id": "yahoo-biz",      "name": "Yahoo!ニュース · 経済",          "cat": "domestic", "url": "https://news.yahoo.co.jp/rss/topics/business.xml",                                   "home": "https://news.yahoo.co.jp/" },
     { "id": "nhk-biz",        "name": "NHK 経済",                       "cat": "domestic", "url": "https://www.nhk.or.jp/rss/news/cat5.xml",                                            "home": "https://www3.nhk.or.jp/news/" },
     { "id": "toyokeizai",     "name": "東洋経済オンライン",             "cat": "domestic", "url": "https://toyokeizai.net/list/feed/rss",                                               "home": "https://toyokeizai.net/" },
     { "id": "itmedia-biz",    "name": "ITmedia ビジネス",              "cat": "domestic", "url": "https://rss.itmedia.co.jp/rss/2.0/business.xml",                                     "home": "https://www.itmedia.co.jp/business/" },
