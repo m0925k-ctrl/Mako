@@ -1,0 +1,62 @@
+[
+  {
+    "id": "T-0031",
+    "customer": "北関東フーズ",
+    "content": "在庫商品の庫内温度記録(8/29分)をまとめて提出する",
+    "requested_at": "2026-08-29",
+    "due": "2026-09-05",
+    "status": "未対応",
+    "assignee": "鈴木 大輔",
+    "related_report": "R-2026-0013",
+    "priority": "高",
+    "note": "顧客の品質管理部宛。メールで送付予定。"
+  },
+  {
+    "id": "T-0032",
+    "customer": "北関東フーズ",
+    "content": "同型冷凍機(他号機)の膨張弁点検を次回訪問時に実施",
+    "requested_at": "2026-08-29",
+    "due": "2026-09-20",
+    "status": "未対応",
+    "assignee": "鈴木 大輔",
+    "related_report": "R-2026-0013",
+    "priority": "中",
+    "note": "経年劣化のため予防交換の提案も検討。"
+  },
+  {
+    "id": "T-0033",
+    "customer": "山田製作所",
+    "content": "コンプレッサ能力増設の見積を作成・提出",
+    "requested_at": "2026-08-31",
+    "due": "2026-09-10",
+    "status": "対応中",
+    "assignee": "佐藤 健一",
+    "related_report": "R-2026-0014",
+    "priority": "高",
+    "note": "営業と連携。工場長が窓口。"
+  },
+  {
+    "id": "T-0034",
+    "customer": "山田製作所",
+    "content": "次回訪問時、フィルター予備(AF-220)を持参",
+    "requested_at": "2026-08-28",
+    "due": "2026-09-25",
+    "status": "未対応",
+    "assignee": "佐藤 健一",
+    "related_report": "R-2026-0012",
+    "priority": "低",
+    "note": ""
+  },
+  {
+    "id": "T-0035",
+    "customer": "みなと物流",
+    "content": "TS-30 操作マニュアル(日本語版)を送付",
+    "requested_at": "2026-09-01",
+    "due": "2026-09-04",
+    "status": "完了",
+    "assignee": "田中 陽子",
+    "related_report": "R-2026-0015",
+    "priority": "中",
+    "note": "9/2 PDF送付済み。"
+  }
+]
