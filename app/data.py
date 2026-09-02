@@ -51,6 +51,9 @@ def _read(name: str):
     if SOURCE == "oracle":
         import data_oracle  # 直結時のみ import（python-oracledb が必要）
         return data_oracle.fetch(key)
+    if SOURCE == "files":
+        import data_files  # Excel/CSV エクスポートから読む
+        return data_files.fetch(key)
     return json.loads((DATA_DIR / name).read_text(encoding="utf-8"))
 
 

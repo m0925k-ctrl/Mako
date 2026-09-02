@@ -1,0 +1,6 @@
+id,hospital_id,name,model,serial,location,installed_at,next_pm
+D-MRI-01,H01,MRI装置,SIGNA Explorer 1.5T,MR15-88213,放射線科 MRI室,2021-04-10,2026-10-15
+D-CT-01,H01,CTスキャナ,Aquilion Lightning 80列,CT80-40219,放射線科 CT室,2022-09-01,2026-09-20
+D-ENDO-01,H02,内視鏡システム,EVIS X1 CV-1500,EN15-10234,内視鏡室,2023-03-15,2026-11-05
+D-INC-01,H03,保育器,Dräger Isolette C2000,IC20-77120,NICU,2020-06-20,2026-09-12
+D-MON-05,H03,生体情報モニタ,BSM-6000,BS60-22014,ICU ベッド5,2019-11-01,2026-10-01

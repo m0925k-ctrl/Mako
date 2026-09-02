@@ -56,6 +56,22 @@ flowchart LR
 
 ---
 
+## 実装ステータス（何が動く／誰が作る）
+
+| 部品 | 状態 | 作る場所 |
+|---|---|---|
+| ダッシュボード（見る） | ✅ 実装済み・動作 | このリポジトリ（`app/` Streamlit・`web/` Web） |
+| AI要約の表示 | ✅ 実装済み（保存型・アカウント不要） | 同上 |
+| **実データ読み込み（Excel/CSV）** | ✅ 実装済み（`MAKO_SOURCE=files`） | 同上。Forms/CRMの**エクスポートを置くだけ** |
+| Oracle 直結 | 🔧 雛形あり（SQLを実スキーマに差替） | `app/data_oracle.py`＋接続情報 |
+| Microsoft Forms（集める） | 🏢 テナントで作成 | 御社 M365（§2の項目で） |
+| Power Automate（自動転記） | 🏢 テナントで作成 | 御社 M365（§4の手順で） |
+| Copilot Studio エージェント | 🏢 トライアルで作成 | 御社（copilot-studio-design.md） |
+
+> **今いちばん早く“実装が動いた”を体験する道**：Forms を1つ作り、数件回答 → Excelでエクスポート →
+> `templates/` と同じ列にして `MAKO_SOURCE=files` で起動。**Power Automate も接続情報も不要で実データが表示**される。
+> そこから Power Automate 自動化・Oracle 直結・Copilot Studio へ広げる。
+
 ## 0. データの考え方（＝カルテ構造）
 
 ```

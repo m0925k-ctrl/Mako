@@ -68,7 +68,21 @@ SharePoint リストに差し替えるだけでダッシュボードは動きま
 `app/data.py` は環境変数 `MAKO_SOURCE` で読み込み先を切り替えます。
 
 - `MAKO_SOURCE=sample`（既定）… `app/sample_data/*.json` を読む
+- `MAKO_SOURCE=files` … **Excel/CSV エクスポートを読む**（`app/data_files.py`）。
+  Forms の回答や CRM のエクスポートを置くだけ。**一番早く実データが見られる**。
 - `MAKO_SOURCE=oracle` … Oracle CRM に直結（`app/data_oracle.py`）
+
+### いちばん早く実データを見る（files モード）
+Power Automate も Graph も接続情報も不要。フォームを作って回答を Excel でエクスポート →
+`templates/` と同じ列名のファイルをフォルダに置く → 起動するだけ。
+
+```bash
+pip install -r requirements.txt
+export MAKO_DATA_DIR=/path/to/あなたのデータ   # reports.xlsx など
+MAKO_SOURCE=files streamlit run app/dashboard.py
+```
+
+列テンプレートと列名マッピング（Forms の質問名が違う場合）は **[templates/](templates/)** を参照。
 
 Oracle 直結は雛形を用意済みです。`app/data_oracle.py` の SQL のテーブル名・列名を
 御社CRMの実スキーマに合わせ、接続情報を環境変数で渡すだけで、画面はそのまま動きます。
@@ -89,6 +103,7 @@ Microsoft Forms → SharePoint で足し、ダッシュボードで統合表示�
 app/
   dashboard.py        # Streamlit ダッシュボード本体
   data.py             # データ読み込み＆項目定義（源の切り替え）
+  data_files.py       # Excel/CSV エクスポート読み込み（files モード）
   data_oracle.py      # Oracle CRM 直結の雛形（SQLを実スキーマに差し替え）
   photos.py           # 写真・顔写真の表示（試作はプレースホルダー生成）
   sample_data/        # ダミーデータ（病院・装置・作業員・報告・残務）
