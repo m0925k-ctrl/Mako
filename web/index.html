@@ -257,6 +257,25 @@
     vertical-align: middle;
   }
 
+  /* AI要約 */
+  .ai-btn {
+    display: none; align-items: center; gap: 6px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent-ink);
+    font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
+  }
+  .ai-btn:hover { background: var(--accent-soft); }
+  .ai-btn:disabled { opacity: .55; cursor: default; }
+  .ai-btn.big { font-size: 13.5px; padding: 9px 15px; }
+  body.has-sample .ai-btn { display: inline-flex; }
+  .ai-block { margin: 0 0 22px; }
+  .ai-out {
+    white-space: pre-wrap; background: var(--accent-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 15px; font-size: 13.5px; line-height: 1.65;
+    margin-top: 10px; color: var(--ink);
+  }
+  .ai-out.thinking { color: var(--muted); font-style: italic; }
+  .ai-hint { color: var(--faint); font-size: 12px; margin-top: 6px; }
+
   /* mobile */
   .menu-btn { display: none; }
   @media (max-width: 860px) {
@@ -377,6 +396,11 @@ function enrichTask(t) {
 const R = REPORTS.map(enrichReport).sort((a,b) => b.when - a.when);
 const T = TASKS.map(enrichTask).sort((a,b) => ({高:0,中:1,低:2}[a.priority]-{高:0,中:1,低:2}[b.priority]) || (a.dueDate-b.dueDate));
 
+/* AI要約の状態（生成結果はセッション中キャッシュ） */
+let SAMPLE = null;
+const aiKarte = {};   // device_id -> 要約テキスト
+const aiReport = {};  // report_id -> 要約テキスト
+
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmtDT = (d) => `${fmtDate(d)} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
@@ -420,6 +444,10 @@ function reportCardHtml(r, showDevice=true) {
     <div class="body">
       <div class="kv"><div class="val">${esc(r.dev.model)} / SN:<span class="mono">${esc(r.dev.serial)}</span>　—　${esc(r.dev.location)}</div></div>
       ${reportBodyHtml(r)}
+      <div class="ai-block" style="margin-top:14px;margin-bottom:0">
+        <button class="ai-btn" data-ai-report="${r.id}">🧠 この報告をAI要約</button>
+        <div class="ai-out" data-ai-out-report="${r.id}" ${aiReport[r.id]?"":"hidden"}>${aiReport[r.id]?esc(aiReport[r.id]):""}</div>
+      </div>
     </div>
   </details>`;
 }
@@ -513,6 +541,11 @@ function viewKarte() {
       <div class="lab">次回点検</div>
       <div class="date mono">${fmtDate(pm)}</div>
     </div>
+  </div>
+
+  <div class="ai-block">
+    <button class="ai-btn big" data-ai-karte="${dev.id}">🧠 このカルテをAI要約（次の担当者向けの申し送りを自動作成）</button>
+    <div class="ai-out" data-ai-out-karte="${dev.id}" ${aiKarte[dev.id]?"":"hidden"}>${aiKarte[dev.id]?esc(aiKarte[dev.id]):""}</div>
   </div>
 
   ${openTasks.length ? `<div class="panel-sub">
@@ -614,6 +647,90 @@ function render() {
   wire();
 }
 
+/* ============================ AI要約（sample機能） ============================ */
+async function initSample() {
+  try { if (window.claude && window.claude.use) SAMPLE = await claude.use("sample"); }
+  catch (_) { SAMPLE = null; }
+  document.body.classList.toggle("has-sample", !!SAMPLE);
+}
+
+function buildKartePrompt(dev, hosp, hist, tasks) {
+  const L = [];
+  L.push("あなたは医療機器のフィールドサービス記録を引き継ぐベテランエンジニアです。");
+  L.push("以下は装置1台の「カルテ」（基本情報・未対応の残務・作業履歴）です。次に対応する担当者が短時間で状況を把握できるよう、日本語で簡潔に要約してください。");
+  L.push("見出しは【現状】【繰り返し起きている事象・注意点】【未対応の残務】【次回訪問での推奨アクション】の4つ。各項目は2〜4行の箇条書き。記録にある事実のみを使い、推測や誇張はしないこと。");
+  L.push("");
+  L.push(`装置: ${dev.name} / 型番 ${dev.model} / SN ${dev.serial}`);
+  L.push(`設置: ${hosp.name} ${dev.location} / 設置日 ${dev.installed_at} / 次回点検 ${dev.next_pm}`);
+  L.push("");
+  L.push("■ 未対応の残務");
+  if (tasks.length) tasks.forEach(t => L.push(`- [${t.priority}] ${t.content}（期限 ${t.due} / 担当 ${t.eng.name}）${t.note ? " 備考: " + t.note : ""}`));
+  else L.push("- なし");
+  L.push("");
+  L.push("■ 作業履歴（新しい順）");
+  hist.forEach(r => {
+    L.push(`◆ ${fmtDate(r.when)}［${r.visit_type}］担当 ${r.eng.name}`);
+    for (const [k, label] of REPORT_FIELDS) { if (k !== "visit_type" && r[k]) L.push(`  - ${label}: ${r[k]}`); }
+  });
+  return L.join("\n").slice(0, 60000);
+}
+
+function buildReportPrompt(r) {
+  const L = ["次の作業報告を、次の担当者が数秒で把握できるよう日本語で2〜3行に要約してください。記録の事実のみ。", ""];
+  for (const [k, label] of REPORT_FIELDS) { if (r[k]) L.push(`${label}: ${r[k]}`); }
+  return L.join("\n").slice(0, 60000);
+}
+
+function aiErrorText(e) {
+  const hide = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
+  if (hide.includes(e.code)) { document.body.classList.remove("has-sample"); return "この環境ではAI要約を利用できません。"; }
+  if (e.code === "cancelled") return "";
+  if (e.code === "rate_limited") return "混み合っています。少し時間をおいて再度お試しください。";
+  if (e.code === "prompt_too_large") return "内容が多いため要約できませんでした。";
+  return "要約に失敗しました。もう一度お試しください。";
+}
+
+async function runSample(btn, out, prompt, opts, cacheObj, cacheKey) {
+  if (!SAMPLE) return;
+  btn.disabled = true;
+  out.hidden = false; out.classList.add("thinking"); out.textContent = "AIが要約中…（数秒〜1分ほどかかります）";
+  try {
+    const { text } = await SAMPLE(prompt, {
+      ...opts,
+      onText: ({ text }) => { out.classList.remove("thinking"); out.textContent = text; },
+    });
+    out.classList.remove("thinking"); out.textContent = text;
+    cacheObj[cacheKey] = text;
+  } catch (e) {
+    const msg = aiErrorText(e);
+    out.classList.remove("thinking");
+    if (msg) out.textContent = msg; else out.hidden = true;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setupAI() {
+  document.getElementById("main").addEventListener("click", (ev) => {
+    const kb = ev.target.closest("[data-ai-karte]");
+    if (kb) {
+      const id = kb.dataset.aiKarte, dev = DMAP[id], hosp = hospOfDevice(dev);
+      const hist = R.filter(r => r.device_id === id);
+      const tasks = T.filter(t => t.device_id === id && t.status !== "完了");
+      const out = document.querySelector(`[data-ai-out-karte="${id}"]`);
+      runSample(kb, out, buildKartePrompt(dev, hosp, hist, tasks), { modelTier: "default" }, aiKarte, id);
+      return;
+    }
+    const rb = ev.target.closest("[data-ai-report]");
+    if (rb) {
+      const id = rb.dataset.aiReport, r = R.find(x => x.id === id);
+      const out = document.querySelector(`[data-ai-out-report="${id}"]`);
+      runSample(rb, out, buildReportPrompt(r), { modelTier: "quick" }, aiReport, id);
+      return;
+    }
+  });
+}
+
 function wire() {
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
   on("sel-hosp","change", e => { karteHosp = e.target.value; karteDev = null; render(); });
@@ -628,4 +745,6 @@ function wire() {
 }
 
 render();
+setupAI();
+initSample();
 </script>

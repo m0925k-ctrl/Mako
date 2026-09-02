@@ -74,10 +74,27 @@ app/
 requirements.txt
 ```
 
+## AI要約（Web版）
+
+`web/index.html`（オンライン版）には AI 要約を実装済みです。
+
+- 「🧠 このカルテをAI要約」… その装置の履歴＋残務から、次の担当者向けの申し送り
+  （現状／繰り返す事象／未対応の残務／次回の推奨アクション）を自動生成
+- 「🧠 この報告をAI要約」… 1件の報告を数行に要約
+
+閲覧者自身の Claude アカウントで生成します（初回のみ同意ダイアログ）。
+Claude 閲覧環境が無い場合はボタンが自動で非表示になります。
+
+## 集める→貯める→見る の連携設計
+
+Microsoft Forms（入力）→ SharePoint（蓄積）→ ダッシュボード（閲覧）を
+一本につなぐ設計は **[docs/forms-and-flow.md](docs/forms-and-flow.md)** にまとめています。
+Forms の質問項目・SharePoint のリスト設計・Power Automate フロー・AI要約の入れ方を含みます。
+
 ## 今後
 
-- [ ] Microsoft Forms の質問項目を確定（`data.py` の `REPORT_FIELDS` と対応）
-- [ ] Power Automate で Forms → SharePoint リストへ自動転記（写真はライブラリへ）
+- [ ] マスタ3つ（病院・装置・作業員）を SharePoint リスト化
+- [ ] 作業報告フォーム＋ Power Automate で SharePoint へ自動転記（写真も）
 - [ ] `data.py` を SharePoint リスト（Microsoft Graph）読み込みに差し替え
 - [ ] 写真・作業員の顔写真を実画像に接続
-- [ ] AI 要約（各報告を「読みやすい要約」に整形）
+- [ ] AI要約を SharePoint に保存する案（Power Automate + AI）も必要に応じて追加
