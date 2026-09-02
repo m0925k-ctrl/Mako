@@ -5,7 +5,21 @@
 
 ## 使い方
 
-`index.html` をブラウザで開くだけです。GitHub Pages や Netlify などにそのまま置いて公開することもできます。
+`index.html` をブラウザで開くだけです。PC・スマートフォン（Android / iPhone）どちらにも対応したレスポンシブデザインです。
+
+### スマホ（Android）で見る — GitHub Pages で公開する
+
+1. GitHub でこのリポジトリの **Settings → Pages** を開く
+2. **Build and deployment → Source** を **「GitHub Actions」** に設定
+3. 同梱の `.github/workflows/pages.yml` が自動で公開します
+4. 数十秒後、`https://m0925k-ctrl.github.io/Mako/` のような URL でスマホのブラウザから閲覧できます
+
+> ※ より簡単に済ませたい場合は Source を「Deploy from a branch」にし、ブランチと `/ (root)` を選ぶだけでも公開できます。
+
+### ホーム画面に追加（アプリのように使う）
+
+公開した URL を Android の Chrome で開き、メニュー → **「ホーム画面に追加」** を選ぶと、
+アプリのようにフルスクリーンで起動できます（PWA 対応）。
 
 ## 主な機能
 

@@ -1,0 +1,15 @@
+{
+  "name": "Executive Brief — 経営ダッシュボード",
+  "short_name": "経営Brief",
+  "description": "経営層を目指す社会人のための、ビジネス情報・世界ニュースを一望できるダッシュボード",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d1017",
+  "theme_color": "#0d1017",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
