@@ -1,0 +1,230 @@
+<title>Mako デモ台本</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --ground: #eaeff1; --surface: #ffffff; --surface-2: #f5f9f9;
+    --ink: #14202a; --muted: #566873; --faint: #8697a2;
+    --border: #dde6e9; --border-strong: #c8d5da;
+    --accent: #0d7c86; --accent-ink: #095a62; --accent-soft: #e2f1f2;
+    --good: #2f9e6f; --good-bg: #e6f4ec; --warn: #b9741d; --warn-bg: #f8eddb;
+    --crit: #cf4242; --crit-bg: #fbe7e7;
+    --shadow: 0 1px 2px rgba(20,32,42,.06), 0 10px 26px -14px rgba(20,32,42,.2);
+    --radius: 14px;
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #0d1418; --surface: #151f26; --surface-2: #1b2731;
+    --ink: #e7eef2; --muted: #95a7b1; --faint: #6d808b;
+    --border: #26333c; --border-strong: #33434e;
+    --accent: #2fb2bd; --accent-ink: #7ad6de; --accent-soft: #123138;
+    --good: #45bd8a; --good-bg: #10281f; --warn: #d69a45; --warn-bg: #2c2113;
+    --crit: #e07070; --crit-bg: #2e1515;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -16px rgba(0,0,0,.7);
+  } }
+  :root[data-theme="dark"] {
+    --ground: #0d1418; --surface: #151f26; --surface-2: #1b2731;
+    --ink: #e7eef2; --muted: #95a7b1; --faint: #6d808b;
+    --border: #26333c; --border-strong: #33434e;
+    --accent: #2fb2bd; --accent-ink: #7ad6de; --accent-soft: #123138;
+    --good: #45bd8a; --good-bg: #10281f; --warn: #d69a45; --warn-bg: #2c2113;
+    --crit: #e07070; --crit-bg: #2e1515;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -16px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "Zen Kaku Gothic New", system-ui, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "Roboto Mono", monospace; }
+
+  /* sticky top */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 11px 20px;
+  }
+  .topbar .brand { font-weight: 900; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .topbar .brand .dot { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: #fff; display: grid; place-items: center; }
+  .topbar .time { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .topbar .planb {
+    margin-left: auto; text-decoration: none; font-size: 13px; font-weight: 700;
+    color: #fff; background: var(--accent); padding: 8px 14px; border-radius: 9px;
+  }
+  .topbar .planb:hover { background: var(--accent-ink); }
+
+  main { max-width: 780px; margin: 0 auto; padding: 30px 20px 80px; }
+
+  .lede {
+    font-size: 30px; font-weight: 900; letter-spacing: .01em; text-wrap: balance; margin: 8px 0 4px;
+  }
+  .lede small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 8px; letter-spacing: 0; }
+
+  /* scene */
+  .scene {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px 22px; margin-top: 20px;
+  }
+  .scene > .head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .scene .num {
+    font-family: "Roboto Mono", monospace; font-weight: 500; font-size: 12px;
+    color: var(--accent-ink); background: var(--accent-soft); padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .scene h2 { font-size: 20px; font-weight: 900; margin: 0; }
+  .scene .dur { margin-left: auto; color: var(--faint); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+
+  .role { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .role b { color: var(--ink); }
+
+  /* spoken line — the star element */
+  .say {
+    position: relative; margin: 12px 0; padding: 15px 16px 15px 46px;
+    background: var(--accent-soft); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent); border-radius: 10px;
+    font-size: 16.5px; line-height: 1.85; font-weight: 500; color: var(--ink);
+  }
+  .say::before {
+    content: "🎤"; position: absolute; left: 14px; top: 14px; font-size: 18px;
+  }
+  .say .tag { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--accent-ink); margin-bottom: 4px; }
+
+  .beat { margin: 10px 0 0; }
+  .beat .k {
+    display: inline-block; min-width: 92px; font-size: 12px; font-weight: 700; letter-spacing: .03em;
+    color: var(--accent-ink); vertical-align: top;
+  }
+  .arrow { color: var(--accent); }
+  .aside {
+    margin-top: 10px; padding: 11px 14px; border-radius: 9px; background: var(--surface-2);
+    border: 1px dashed var(--border-strong); font-size: 13.5px; color: var(--muted);
+  }
+  .aside b { color: var(--ink); }
+
+  h3.sec { font-size: 15px; font-weight: 800; letter-spacing: .02em; margin: 34px 0 4px; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 13.5px; overflow: hidden; border-radius: 10px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 700; font-size: 12.5px; }
+  tr:last-child td { border-bottom: 0; }
+
+  ul.check { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.check li { padding: 7px 0 7px 30px; position: relative; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.check li:last-child { border-bottom: 0; }
+  ul.check li::before { content: "☐"; position: absolute; left: 4px; top: 6px; color: var(--accent); font-size: 16px; }
+
+  dl.qa { margin: 12px 0 0; }
+  dl.qa dt { font-weight: 700; font-size: 14px; margin-top: 12px; }
+  dl.qa dt::before { content: "Q. "; color: var(--accent-ink); }
+  dl.qa dd { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; }
+  dl.qa dd::before { content: "A. "; color: var(--good); font-weight: 700; }
+
+  .foot { margin-top: 30px; color: var(--faint); font-size: 12px; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media print {
+    .topbar { position: static; } body { background: #fff; }
+    .scene { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+
+<div class="topbar">
+  <span class="brand"><span class="dot">🎬</span> Mako デモ台本</span>
+  <span class="time">所要 約7分</span>
+  <a class="planb" href="https://claude.ai/code/artifact/e38f92d6-058a-46cd-8709-0a1e2c7b7bd7" target="_blank" rel="noopener">▶ ダッシュボード（Plan B）</a>
+</div>
+
+<main>
+  <p class="lede">「紙の申し送り」から「話すカルテ」へ
+    <small>Copilot Studio トライアルのメンバー向け実演台本。サンプルデータ（さくら総合病院のMRI 他）で進める。🎤 は声に出すセリフ。</small>
+  </p>
+
+  <section class="scene">
+    <div class="head"><span class="num">00</span><h2>つかみ</h2><span class="dur">30秒</span></div>
+    <div class="say"><span class="tag">語りかける</span>
+      ベテランのカスタマーエンジニアほど、現場での対応や次の人への申し送りを紙にきっちり書いて、会社に持ち帰って PDF にして、ファイルサーバーにしまっています。でも——次の人はそれを探せるでしょうか。装置1台の“これまで”を、訪問前に把握できるでしょうか。それを、<b>現場では話すだけ、知りたい人は聞くだけ</b>にするのが Mako です。</div>
+    <div class="aside">🖥 装置カルテ画面（またはスライド1枚）を出したまま話す。</div>
+  </section>
+
+  <section class="scene">
+    <div class="head"><span class="num">01</span><h2>現場で「話して登録」</h2><span class="dur">2分</span></div>
+    <p class="role"><b>状況</b>：さくら総合病院でMRIの緊急対応を終えた現場エンジニア。Teams の Mako に話しかける（できれば<b>スマホで音声入力</b>）。</p>
+    <div class="say"><span class="tag">セリフ①：報告を登録</span>
+      さくら総合病院のMRIで、緊急対応の報告を登録して。画像にノイズが出ていて、原因はRFコイルのコネクタ接触不良。コネクタを清掃して再固定、RFキャリブレーションを実施。ファントム撮像でノイズは消えて、臨床画像も良好。コネクタ樹脂に軽い劣化があるので、次回定期でコイルケーブルの予防交換を提案したい。</div>
+    <div class="beat"><span class="k">見せ所 <span class="arrow">▶</span></span> エージェントが、話した内容を<b>項目（対応区分／作業内容／不具合／対応／結果／申し送り）に自動整理</b>して確認画面を出す → 「これで登録」で SharePoint に保存。</div>
+    <div class="say"><span class="tag">セリフ②：残務も口頭で</span>
+      さっきのコイルケーブル予防交換を、残務に入れて。優先度は中、期限は次回点検日で。</div>
+    <div class="aside">💬 <b>ひとこと</b>：紙に書いて持ち帰って…がゼロに。手が離せない現場でも話すだけ。項目の抜けはエージェントが聞き返してくれます。</div>
+  </section>
+
+  <section class="scene">
+    <div class="head"><span class="num">02</span><h2>別の人が「聞いて把握」</h2><span class="dur">2分30秒</span></div>
+    <p class="role"><b>状況</b>：サービスセンターの担当、または翌週の訪問前の別エンジニアが、同じ Teams で聞くだけ。</p>
+    <div class="say"><span class="tag">質問①：直近の対応</span>さくら総合病院のMRIの、直近の対応を教えて。</div>
+    <div class="beat"><span class="k">見せ所 <span class="arrow">▶</span></span> さっき登録した緊急対応が<b>引用付き</b>で返る。「今登録したものがもう見える」を強調。</div>
+    <div class="say"><span class="tag">質問②：安全に関わる残務</span>保育器で未対応の残務は？期限は？</div>
+    <div class="beat"><span class="k">返る内容 <span class="arrow">▶</span></span> NICUの酸素センサー交換（未対応・高・期限9/15）。<b>安全に直結するものが期限つきで漏れずに追える。</b></div>
+    <div class="say"><span class="tag">質問③：訪問前の下調べ</span>MRIで過去に繰り返している事象や、注意点はある？</div>
+    <div class="beat"><span class="k">返る内容 <span class="arrow">▶</span></span> 冷却水ポンプの異音（経過観察）、コネクタ樹脂の劣化傾向など<b>履歴からの傾向</b>。訪問前の下調べが数秒。</div>
+    <div class="say"><span class="tag">質問④：段取り</span>来週、点検が近い装置は？</div>
+    <div class="beat"><span class="k">返る内容 <span class="arrow">▶</span></span> 次回点検が近い装置の一覧。</div>
+  </section>
+
+  <section class="scene">
+    <div class="head"><span class="num">03</span><h2>自動まとめ・通知</h2><span class="dur">1分</span></div>
+    <div class="say"><span class="tag">セリフ：カルテ要約</span>さくら総合病院のMRIのカルテを要約して。</div>
+    <div class="beat"><span class="k">返る内容 <span class="arrow">▶</span></span> <b>【現状】【繰り返す事象・注意点】【未対応の残務】【次回の推奨アクション】</b>の4見出しの申し送り。次の担当者が3秒で状況を掴める形。</div>
+    <div class="aside">💬 <b>ひとこと</b>：これは登録時に<b>自動生成して保存</b>もできます。誰が開いても同じ要約が読めて、<b>社内テナントの中だけで完結</b>——データは外に出ません。（時間があれば）期限が近い残務や点検を担当へ Teams で<b>自動リマインド</b>も。</div>
+  </section>
+
+  <section class="scene">
+    <div class="head"><span class="num">04</span><h2>ダッシュボードで俯瞰</h2><span class="dur">1分</span></div>
+    <p class="role"><b>見せ方</b>：オンライン版ダッシュボードを開く（PC/スマホどちらでも）。上部の「ダッシュボード（Plan B）」ボタンから。</p>
+    <div class="beat"><span class="k">装置カルテ <span class="arrow">▶</span></span> 1台の履歴が時系列＋地図＋顔写真＋AI申し送りサマリー</div>
+    <div class="beat"><span class="k">残務ボード <span class="arrow">▶</span></span> 未対応/対応中/完了、期限超過は赤</div>
+    <div class="beat"><span class="k">サマリー <span class="arrow">▶</span></span> 全体の件数・点検が近い装置</div>
+    <div class="aside">💬 <b>ひとこと</b>：聞くのがエージェント、俯瞰するのがダッシュボード。どちらも同じ記録（CRM＋SharePoint）を見ているだけ。会社に構造的にたまって、現場もセンターも好きな時に見られます。</div>
+  </section>
+
+  <section class="scene">
+    <div class="head"><span class="num">05</span><h2>まとめ</h2><span class="dur">30秒</span></div>
+    <div class="say"><span class="tag">締め</span>Mako がやることは3つ。<b>現場は話すだけ／知りたい人は聞くだけ／記録は会社に構造的にたまる。</b>装置1台ごとの“カルテ”になって、属人的だった申し送りが、次の人にちゃんと引き継がれます。</div>
+  </section>
+
+  <h3 class="sec">🛟 Plan B（エージェントが動かないとき）</h3>
+  <p class="role">その場で動かなくても、ストーリーは崩さずオンライン版で見せる。事前にタブで開いておく。</p>
+  <div class="tablewrap"><table>
+    <tr><th>台本のシーン</th><th>Plan B の見せ方（ダッシュボード）</th></tr>
+    <tr><td>S1 話して登録</td><td>「入力は Forms／将来は会話で」と口頭補足し、装置カルテの1件を開いて“こう溜まる”を見せる</td></tr>
+    <tr><td>S2 聞いて把握</td><td>装置カルテの<b>作業履歴（時系列）</b>と<b>残務ボード</b>で同じ問いに答える</td></tr>
+    <tr><td>S3 自動まとめ</td><td>装置カルテの<b>AI申し送りサマリー</b>（保存済み）をそのまま見せる</td></tr>
+  </table></div>
+
+  <h3 class="sec">✅ 前日までの準備チェック</h3>
+  <ul class="check">
+    <li>Mako エージェントを Teams に公開、<b>スマホで音声入力</b>を一度通しで試す</li>
+    <li>アクション（カルテ取得・報告登録・残務登録・要約）が動くか通しで確認</li>
+    <li>サンプル/検証データを投入（さくら総合病院MRI・保育器 などが揃っているか）</li>
+    <li>S1〜3のセリフを<b>声に出して1回リハ</b>（言い回しに詰まらないか）</li>
+    <li><b>Plan B</b>：オンライン版ダッシュボードをタブで開いておく</li>
+    <li>画面共有・音声（マイク/スピーカー）・ネットワークの動作確認</li>
+  </ul>
+
+  <h3 class="sec">💬 想定質問（Q&amp;A 早見）</h3>
+  <dl class="qa">
+    <dt>データはどこに？</dt><dd>Oracle CRM（顧客・装置・契約・過去履歴）＋ SharePoint（新規報告・残務・写真）。AIも社内テナント内で完結し、データは社外に出ない。</dd>
+    <dt>今の紙／PDF運用は？</dt><dd>しばらく併用可。慣れたら会話入力に寄せていける。移行は段階的。</dd>
+    <dt>回答の正確さは？</dt><dd>記録を根拠に引用付きで答える設計。推測はしない方針を instructions で明示。</dd>
+    <dt>誰がどの顧客を見れる？</dt><dd>権限・データ境界はトライアルの確認項目（顧客ごとのアクセス制御）。</dd>
+    <dt>音声認識の精度は？</dt><dd>端末の音声入力を利用。専門用語は登録時にエージェントが確認・補正。</dd>
+    <dt>既存CRMと二重管理にならない？</dt><dd>ならない。CRMが正、ダッシュボードもエージェントも同じデータを見るだけ。</dd>
+  </dl>
+
+  <p class="foot">Mako — 装置カルテ / デモ台本　·　サンプルデータによる試作</p>
+</main>
