@@ -57,10 +57,12 @@
         <span id="mail-title"></span>
         <button id="mail-close" class="icon-btn">×</button>
       </div>
+      <label class="mail-field" id="mail-to-field" hidden>宛先(CE)<input id="mail-to" type="text" placeholder="ce@example.com" /></label>
       <label class="mail-field">件名<input id="mail-subject" type="text" /></label>
       <label class="mail-field">本文<textarea id="mail-body" rows="16"></textarea></label>
       <div class="modal-actions">
         <button id="mail-copy" class="primary">クリップボードにコピー</button>
+        <button id="mail-send" class="primary" hidden>CEへ送信</button>
         <span id="mail-note" class="hint"></span>
       </div>
     </div>

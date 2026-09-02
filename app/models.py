@@ -49,3 +49,21 @@ class MailRenderResponse(BaseModel):
     label: str
     subject: str
     body: str
+
+
+class DispatchRequest(BaseModel):
+    to: str | None = Field(default=None, description="宛先メール。未指定ならCEの解決メール")
+    subject: str | None = Field(default=None, description="編集済み件名。未指定ならテンプレート生成")
+    body: str | None = Field(default=None, description="編集済み本文。未指定ならテンプレート生成")
+    send: bool = Field(default=False, description="True かつ SMTP有効時のみ実送信")
+
+
+class DispatchResponse(BaseModel):
+    case_id: str
+    to: str
+    ce_name: str
+    subject: str
+    body: str
+    sent: bool
+    reason: str
+    smtp_enabled: bool

@@ -1,0 +1,9 @@
+[
+  { "code": "86452", "name": "高橋 一郎", "email": "takahashi@example.com", "area": "首都圏", "night_duty": false },
+  { "code": "78453", "name": "井上 次郎", "email": "inoue@example.com", "area": "首都圏", "night_duty": true },
+  { "code": "90503", "name": "中村 三郎", "email": "nakamura@example.com", "area": "関西", "night_duty": false },
+  { "code": "97502", "name": "加藤 四郎", "email": "kato@example.com", "area": "中部", "night_duty": false },
+  { "code": "FS-TAKAHASHI", "name": "FS 高橋", "email": "fs-takahashi@example.com", "area": "首都圏", "night_duty": false },
+  { "code": "FS-NAKAMURA", "name": "FS 中村", "email": "fs-nakamura@example.com", "area": "関西", "night_duty": false },
+  { "code": "FS-KATO", "name": "FS 加藤", "email": "fs-kato@example.com", "area": "中部", "night_duty": false }
+]

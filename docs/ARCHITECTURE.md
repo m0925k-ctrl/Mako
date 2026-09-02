@@ -235,6 +235,28 @@ uvicorn app.main:app --port 8000
 **既存 VBA/クエリの再利用**：`Q_サービス要求` のような既存クエリをそのまま
 `MAKO_ACCESS_CASE_TABLE` に指定して読めるため、VBA で組んだ抽出ロジックを流用できる。
 
+> **クエリ3 = 作業履歴**：クエリ3 は受付ヘッダ＋作業実績（`ACROS_タスク`）の結合で、
+> 実体は「作業履歴」。本アプリでは作業履歴を独立ソース
+> （`app/repositories/work_history.py`、`MAKO_WORKHISTORY_BACKEND`、既定は `MAKO_CASE_BACKEND` に追従）
+> として SR番号 で紐づける。**受付データ（intake）は別ソース**として今後接続する（下記 3.3・要スキーマ共有）。
+
+### 3.3 受付 → CE ディスパッチ（作業指示メール）
+
+受付担当が現地 CE（カスタマーエンジニア）へ作業指示をメールで送るフロー。
+
+- **CE ディレクトリ**（`app/repositories/engineers.py`）：作業担当コード → 氏名・メール。
+  `json`（`app/data/engineers.json`）/ `access`（`SENS_ユーザ情報`）。`MAKO_ENGINEER_BACKEND`。
+- **メール生成**：`ce_dispatch` テンプレート（作業指示書）に、ケース＋得意先メモ
+  （入館方法・部品受取・約束事項・要注意/出入禁止）＋想定部品＋訪問予定＋ディスパッチ元を差し込む。
+- **送信**（`app/mailer.py`）：既定は**下書きのみ**（`MAKO_SMTP_ENABLED=0`）。
+  `1` かつ SMTP 設定時のみ実送信（STARTTLS 対応）。運用は「下書き→確認→送信」を推奨。
+- **API**：`POST /api/console/case/{case_id}/dispatch`
+  （`to` 未指定なら CE の解決メール、`subject`/`body` 未指定ならテンプレート生成、`send=true` で送信）。
+- **UI**：コンソールの「▶ 現地へ作業指示（CEディスパッチ）」から、宛先・件名・本文を確認/編集して送信。
+
+> 宛先メールの解決には CE マスタ（作業担当コード↔メール）が必要。`SENS_ユーザ情報` の
+> 該当列（社員番号/氏名/メール）を `MAKO_ACCESS_ENGINEER_*` で指定する。
+
 ### 全文検索について
 モックは Python 内の部分一致（`score_text`）。共有ファイルや掲示板が大規模化する場合は、
 `store` の裏に **Elasticsearch / OpenSearch** 等の全文検索エンジンを置き、アダプタはそのクエリを

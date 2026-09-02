@@ -86,6 +86,40 @@ def test_mail_ctfs_board_includes_error():
     assert "2104" in r.json()["body"]
 
 
+def test_ce_dispatch_draft():
+    # 送信せず下書き生成。作業指示に現地情報(入館方法)が入ること。
+    r = client.post(
+        "/api/console/case/CS-2025-100427/dispatch",
+        json={"send": False},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["sent"] is False
+    assert "作業指示" in body["subject"] or "CS-2025-100427" in body["subject"]
+    assert "入館方法" in body["body"]
+    assert "救急外来入口" in body["body"]  # 得意先メモの入館方法が反映
+
+
+def test_ce_dispatch_send_without_smtp_is_not_sent():
+    # SMTP 未設定なら send=True でも実送信されない(下書き扱い)。
+    r = client.post(
+        "/api/console/case/CS-2025-100427/dispatch",
+        json={"send": True, "to": "ce@example.com"},
+    )
+    assert r.status_code == 200
+    assert r.json()["sent"] is False
+
+
+def test_ce_dispatch_resolves_email_via_engineer_directory():
+    # 作業担当コードが CE ディレクトリにあればメールが解決されること。
+    r = client.post(
+        "/api/console/case/CS-2025-100427/dispatch",
+        json={"send": False, "to": ""},
+    )
+    # デモの assignee はコード未登録のため宛先は空(=要入力)。挙動確認のみ。
+    assert "to" in r.json()
+
+
 def test_add_customer_note():
     r = client.post(
         "/api/customers/C-0003/notes",

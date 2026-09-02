@@ -11,7 +11,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.repositories import get_case_repository, get_customer_repository
+from app.repositories import (
+    get_case_repository,
+    get_customer_repository,
+    get_engineer_repository,
+    get_work_history_repository,
+)
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -35,14 +40,22 @@ class Store:
         self.shared_files: list[dict] = _load("shared_files.json")
         self.cases_db: list[dict] = _load("cases_db.json")
         self.email_templates: dict = _load("email_templates.json")
-        # 受付ケースと得意先情報はバックエンド差し替え可能なリポジトリ経由。
-        #   既定 JSON / 本番 Access ODBC(ケース) ・ Oracle/Access ODBC(得意先)
-        self.case_repo = get_case_repository()
-        self.customer_repo = get_customer_repository()
+        # 各データはバックエンド差し替え可能なリポジトリ経由。
+        #   既定 JSON / 本番 Access・Oracle ODBC
+        self.case_repo = get_case_repository()  # 受付ケース
+        self.customer_repo = get_customer_repository()  # 得意先
+        self.work_history_repo = get_work_history_repository()  # 作業履歴(クエリ3)
+        self.engineer_repo = get_engineer_repository()  # CE担当ディレクトリ
 
     # ---- ルックアップ ----------------------------------------------------
     def list_cases(self, limit: int = 500) -> list[dict]:
         return self.case_repo.list_all(limit)
+
+    def list_work_history(self, case_id: str) -> list[dict]:
+        return self.work_history_repo.list_by_case(case_id)
+
+    def get_engineer(self, code: str) -> dict | None:
+        return self.engineer_repo.get(code)
 
     def get_case(self, case_id: str) -> dict | None:
         return self.case_repo.get(case_id)

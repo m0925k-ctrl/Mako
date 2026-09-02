@@ -85,6 +85,24 @@ def test_access_fields_match_confirmed_schema():
     assert ACCESS_FIELDS["task_status"] == "タスクステータス"
 
 
+def test_engineer_directory_json():
+    from app.repositories.engineers import get_engineer_repository
+
+    repo = get_engineer_repository()
+    assert repo.backend == "json"
+    eng = repo.get("86452")
+    assert eng and eng["email"] == "takahashi@example.com"
+    assert repo.get("NONE") is None
+
+
+def test_work_history_repo_json():
+    from app.repositories.work_history import get_work_history_repository
+
+    repo = get_work_history_repository()
+    wh = repo.list_by_case("CS-2025-100427")
+    assert isinstance(wh, list) and len(wh) >= 1
+
+
 def test_access_to_case_aggregates_tasks():
     # 同一SR番号の複数タスク行が1ケース＋作業履歴に集約されること(実列名の行で検証)。
     rows = [

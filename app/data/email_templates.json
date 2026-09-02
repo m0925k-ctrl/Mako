@@ -1,4 +1,9 @@
 {
+  "ce_dispatch": {
+    "label": "作業指示（CEディスパッチ）",
+    "subject": "【作業指示】{case_id} {customer_name} {model} / {sla_level}",
+    "body": "CE {ce_name} 各位\n\n下記の現地作業を依頼します。\n\n■受付番号(SR)：{case_id}\n■得意先：{customer_name}\n■機種：{model}（{model_code}） 号機：{customer_equipment_id}\n■BU/モダリティ：{modality}\n■現象：{symptom}\n■緊急度：{sla_level} ／ システムダウン：{system_down} ／ 契約：{contract}\n■訪問予定：{visit_at}\n■リモメン：{remote_status} ／ 直前アラート：{last_alert}\n■想定部品：{part_list}\n\n【現地情報】\n・入館方法：{access_method}\n・部品受取：{part_receipt_location}\n・約束事項：{promises}\n・要注意：{caution}\n・出入禁止：{banned}\n\n■ディスパッチ元：{dispatch_area} ／ 夜間当番：{night_contact}\n受付：{assignee}"
+  },
   "in_progress": {
     "label": "【対応中】FS掲示板 対応中メール",
     "subject": "【対応中】{case_id} {customer_name} {model} {error_label}",

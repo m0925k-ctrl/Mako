@@ -291,12 +291,14 @@ function relatedPanel(d) {
 }
 
 function actionsPanel(d) {
-  return `<div class="panel"><h3>アクション（メール / 反映）</h3>
+  const id = esc(d.case.case_id);
+  return `<div class="panel"><h3>アクション（受付→CEディスパッチ / メール）</h3>
     <div class="actions">
-      <button data-mail="in_progress" data-case="${esc(d.case.case_id)}">✉ 対応中メール（FS掲示板）</button>
-      <button data-mail="part_order" data-case="${esc(d.case.case_id)}">✉ 部品出荷依頼メール</button>
-      <button data-mail="part_proxy" data-case="${esc(d.case.case_id)}">✉ 部品代理登録メール</button>
-      <button data-mail="ctfs_board" data-case="${esc(d.case.case_id)}">📋 CT-FS掲示板 反映内容</button>
+      <button data-dispatch="${id}">▶ 現地へ作業指示（CEディスパッチ）</button>
+      <button data-mail="in_progress" data-case="${id}">✉ 対応中メール（FS掲示板）</button>
+      <button data-mail="part_order" data-case="${id}">✉ 部品出荷依頼メール</button>
+      <button data-mail="part_proxy" data-case="${id}">✉ 部品代理登録メール</button>
+      <button data-mail="ctfs_board" data-case="${id}">📋 CT-FS掲示板 反映内容</button>
     </div></div>`;
 }
 
@@ -365,6 +367,9 @@ function wireConsole(d) {
   $$('[data-mail]').forEach((btn) =>
     btn.addEventListener("click", () => openMail(btn.dataset.case, btn.dataset.mail))
   );
+  $$('[data-dispatch]').forEach((btn) =>
+    btn.addEventListener("click", () => openDispatch(btn.dataset.dispatch))
+  );
 }
 
 // ---- メールモーダル ------------------------------------------------------
@@ -379,13 +384,64 @@ async function openMail(caseId, template) {
     $("#mail-subject").value = r.subject;
     $("#mail-body").value = r.body;
     $("#mail-note").textContent = "";
+    $("#mail-send").hidden = true;
+    $("#mail-to-field").hidden = true;
+    dispatchCaseId = null;
     $("#mail-modal").hidden = false;
   } catch (err) {
     alert("メール生成に失敗: " + err.message);
   }
 }
-$("#mail-close").addEventListener("click", () => ($("#mail-modal").hidden = true));
-$("#mail-modal").addEventListener("click", (e) => { if (e.target.id === "mail-modal") $("#mail-modal").hidden = true; });
+// 受付 → CE ディスパッチ（作業指示メール生成 + 送信）
+let dispatchCaseId = null;
+async function openDispatch(caseId) {
+  try {
+    const r = await api(`/api/console/case/${encodeURIComponent(caseId)}/dispatch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ send: false }),
+    });
+    dispatchCaseId = caseId;
+    $("#mail-title").textContent = "作業指示（CEディスパッチ）";
+    $("#mail-to-field").hidden = false;
+    $("#mail-to").value = r.to || "";
+    $("#mail-subject").value = r.subject;
+    $("#mail-body").value = r.body;
+    $("#mail-send").hidden = false;
+    $("#mail-note").textContent = r.smtp_enabled
+      ? (r.to ? "" : "宛先(CEメール)が未解決です。上の欄に入力してください。")
+      : "※SMTP未設定のため送信は無効（下書き/コピーのみ）。";
+    $("#mail-modal").hidden = false;
+  } catch (err) {
+    alert("ディスパッチ生成に失敗: " + err.message);
+  }
+}
+$("#mail-send").addEventListener("click", async () => {
+  if (!dispatchCaseId) return;
+  try {
+    const r = await api(`/api/console/case/${encodeURIComponent(dispatchCaseId)}/dispatch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: $("#mail-to").value.trim(),
+        subject: $("#mail-subject").value,
+        body: $("#mail-body").value,
+        send: true,
+      }),
+    });
+    $("#mail-note").textContent = (r.sent ? "✔ " : "") + r.reason + (r.to ? `（宛先: ${r.to}）` : "");
+  } catch (err) {
+    $("#mail-note").textContent = "送信エラー: " + err.message;
+  }
+});
+function closeMailModal() {
+  $("#mail-modal").hidden = true;
+  $("#mail-send").hidden = true;
+  $("#mail-to-field").hidden = true;
+  dispatchCaseId = null;
+}
+$("#mail-close").addEventListener("click", closeMailModal);
+$("#mail-modal").addEventListener("click", (e) => { if (e.target.id === "mail-modal") closeMailModal(); });
 $("#mail-copy").addEventListener("click", async () => {
   const text = `件名: ${$("#mail-subject").value}\n\n${$("#mail-body").value}`;
   try {

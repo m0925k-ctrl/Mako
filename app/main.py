@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from app import __version__, console
 from app.aggregator import search as run_search
 from app.models import (
+    DispatchRequest,
+    DispatchResponse,
     MailRenderRequest,
     MailRenderResponse,
     NoteCreate,
@@ -100,6 +102,17 @@ def render_mail(case_id: str, payload: MailRenderRequest) -> MailRenderResponse:
     if rendered is None:
         raise HTTPException(status_code=404, detail=f"ケースが見つかりません: {case_id}")
     return MailRenderResponse(**rendered)
+
+
+@app.post("/api/console/case/{case_id}/dispatch", response_model=DispatchResponse)
+def dispatch_ce(case_id: str, payload: DispatchRequest) -> DispatchResponse:
+    """受付 → CE ディスパッチ。作業指示メールを生成し、必要なら送信する。"""
+    result = console.dispatch_ce(
+        case_id, payload.to, payload.subject, payload.body, payload.send
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"ケースが見つかりません: {case_id}")
+    return DispatchResponse(**result)
 
 
 # --- 静的フロント ---------------------------------------------------------
