@@ -239,6 +239,10 @@ Power Automate から自動で呼べる API ではないため、**「登録時�
 - まず情報システム部門に「AI Builder / Copilot Studio を Power Automate から使えるか」を確認。
   使えれば段階2へ、難しければ段階1の運用を続ける。
 
+> **Copilot Studio が使える場合**は、要約の自動化にとどまらず、Teams で
+> 「話して登録・聞いて把握・自動通知」まで広がる。設計は
+> [copilot-studio-design.md](copilot-studio-design.md) を参照。
+
 > **まとめ**：要約の**見せ方（保存して誰でも閲覧）は確定**。**作り方**だけ、
 > 当面はCopilotチャットで半自動（段階1）→ ライセンス確認できたら自動化（段階2）。
 

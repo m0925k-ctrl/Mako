@@ -113,6 +113,9 @@ Microsoft Forms（入力）→ SharePoint（蓄積）→ ダッシュボード�
 一本につなぐ設計は **[docs/forms-and-flow.md](docs/forms-and-flow.md)** にまとめています。
 Forms の質問項目・SharePoint のリスト設計・Power Automate フロー・AI要約の入れ方を含みます。
 
+Copilot Studio が使える場合の設計（Teams で話して登録・聞いて把握・自動要約/通知）は
+**[docs/copilot-studio-design.md](docs/copilot-studio-design.md)** にまとめています（トライアル向け）。
+
 ## 今後
 
 - [ ] マスタ3つ（病院・装置・作業員）を SharePoint リスト化
