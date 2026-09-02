@@ -19,15 +19,14 @@ async function api(path, opts) {
 }
 
 // ---- モード切替 ----------------------------------------------------------
-$$(".mode-btn").forEach((btn) =>
-  btn.addEventListener("click", () => {
-    $$(".mode-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    const mode = btn.dataset.mode;
-    $("#mode-console").hidden = mode !== "console";
-    $("#mode-search").hidden = mode !== "search";
-  })
-);
+function setMode(mode) {
+  $$(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  $("#mode-reception").hidden = mode !== "reception";
+  $("#mode-console").hidden = mode !== "console";
+  $("#mode-search").hidden = mode !== "search";
+  if (mode === "reception") loadReceptions();
+}
+$$(".mode-btn").forEach((btn) => btn.addEventListener("click", () => setMode(btn.dataset.mode)));
 
 // ==========================================================================
 // ケースコンソール(複数タブ)
@@ -525,15 +524,80 @@ function renderSearch(res) {
   }).join("");
 
   $$('[data-open]').forEach((b) => b.addEventListener("click", () => {
-    $$(".mode-btn").forEach((x) => x.classList.remove("active"));
-    $('.mode-btn[data-mode="console"]').classList.add("active");
-    $("#mode-console").hidden = false; $("#mode-search").hidden = true;
+    setMode("console");
     openByInput(b.dataset.open);
   }));
 }
 
 const labelOf = (key) => (sourceList.find((s) => s.key === key) || {}).label || key;
 
+// ==========================================================================
+// 受付一覧（intake queue）— 受付から CE ディスパッチの入口
+// ==========================================================================
+let receptionStatus = "";
+function urgencyClass(s) { return /即時|即日/.test(s || "") ? "pill urg" : "pill"; }
+function statusClass(s) {
+  if (/完了|済/.test(s)) return "pill done";
+  if (/対応中/.test(s)) return "pill wip";
+  return "pill open";
+}
+async function loadReceptions() {
+  const q = $("#reception-input").value.trim();
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (receptionStatus) params.set("status", receptionStatus);
+  $("#reception-table").innerHTML = '<div class="muted" style="padding:16px">読み込み中…</div>';
+  try {
+    const rows = await api(`/api/receptions?${params.toString()}`);
+    renderReceptions(rows);
+  } catch (err) {
+    $("#reception-table").innerHTML = `<div class="danger" style="padding:16px">読み込みエラー: ${esc(err.message)}</div>`;
+  }
+}
+function renderReceptions(rows) {
+  $("#reception-meta").textContent = `${rows.length} 件`;
+  if (!rows.length) { $("#reception-table").innerHTML = '<div class="muted" style="padding:16px">該当なし。</div>'; return; }
+  const body = rows.map((r) => `
+    <tr>
+      <td>${esc((r.received_at || "").replace("T", " ").slice(0, 16))}</td>
+      <td>${r.hot_issue_site ? '<span class="hot" title="Hot Issueサイト">●</span> ' : ""}${esc(r.customer_name)}</td>
+      <td>${esc(r.modality)} ${esc(r.model)}</td>
+      <td class="sym">${esc(r.symptom)}</td>
+      <td><span class="${urgencyClass(r.sla_level)}">${esc(r.sla_level || "-")}</span></td>
+      <td>${r.system_down === "YES" ? '<span class="pill urg">DOWN</span>' : esc(r.system_down)}</td>
+      <td>${esc(r.remote)}</td>
+      <td><span class="${statusClass(r.status)}">${esc(r.status)}</span></td>
+      <td><div class="row-actions">
+        <button data-open="${esc(r.case_id)}">開く</button>
+        <button class="disp" data-dispatch-row="${esc(r.case_id)}">CEディスパッチ</button>
+      </div></td>
+    </tr>`).join("");
+  $("#reception-table").innerHTML = `<div class="rt-wrap"><table class="rt">
+    <thead><tr><th>受付日時</th><th>得意先</th><th>機種</th><th>現象</th><th>緊急度</th><th>ダウン</th><th>リモメン</th><th>状態</th><th>操作</th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+  $$('[data-open]').forEach((b) => b.addEventListener("click", () => { setMode("console"); openByInput(b.dataset.open); }));
+  $$('[data-dispatch-row]').forEach((b) => b.addEventListener("click", () => openDispatch(b.dataset.dispatchRow)));
+}
+$("#reception-form").addEventListener("submit", (e) => { e.preventDefault(); loadReceptions(); });
+(function () {
+  const box = $("#reception-filters");
+  box.innerHTML = '<span class="lbl">状態:</span>';
+  [["", "すべて"], ["未対応", "未対応"], ["対応中", "対応中"], ["受付済", "受付済"]].forEach(([val, label]) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = label;
+    chip.addEventListener("click", () => {
+      receptionStatus = val;
+      $$("#reception-filters .chip").forEach((c) => c.style.borderColor = "");
+      chip.style.borderColor = "var(--accent)";
+      loadReceptions();
+    });
+    box.appendChild(chip);
+  });
+})();
+
 // ---- 初期化 --------------------------------------------------------------
 loadSources().catch(() => {});
 loadQuickOpen();
+loadReceptions();          // 受付一覧を初期表示（既定の入口）
+openByInput("CS-2025-100427"); // コンソールにサンプルを用意（裏で用意）

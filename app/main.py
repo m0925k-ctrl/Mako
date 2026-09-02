@@ -15,6 +15,7 @@ from app.models import (
     MailRenderRequest,
     MailRenderResponse,
     NoteCreate,
+    ReceptionRow,
     SearchResponse,
     SourceInfo,
 )
@@ -58,6 +59,16 @@ def search(
 ) -> SearchResponse:
     source_keys = [s for s in sources.split(",") if s] if sources else None
     return run_search(q, source_keys=source_keys, limit=limit)
+
+
+@app.get("/api/receptions", response_model=list[ReceptionRow])
+def receptions(
+    q: str | None = Query(None, description="キーワード絞り込み"),
+    status: str | None = Query(None, description="状態で絞り込み(未対応/対応中 等)"),
+    limit: int = Query(100, ge=1, le=500),
+) -> list[ReceptionRow]:
+    rows = console.list_receptions(limit=limit, keyword=q, status=status)
+    return [ReceptionRow(**r) for r in rows]
 
 
 @app.get("/api/console/case/{case_id}")

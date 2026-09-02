@@ -13,13 +13,27 @@
       <span class="brand-sub">CSC 集約検索コンソール</span>
     </div>
     <nav class="mode-nav">
-      <button class="mode-btn active" data-mode="console">ケースコンソール</button>
+      <button class="mode-btn active" data-mode="reception">受付一覧</button>
+      <button class="mode-btn" data-mode="console">ケースコンソール</button>
       <button class="mode-btn" data-mode="search">横断検索</button>
     </nav>
   </header>
 
+  <!-- 受付一覧 -->
+  <main id="mode-reception" class="mode-panel">
+    <section class="search-box">
+      <form id="reception-form">
+        <input id="reception-input" type="text" placeholder="受付を絞り込み  例: 中央 / MRI / 2104" autocomplete="off" />
+        <button type="submit">絞り込み</button>
+      </form>
+      <div class="reception-filters" id="reception-filters"></div>
+    </section>
+    <div id="reception-meta" class="search-meta"></div>
+    <div id="reception-table"></div>
+  </main>
+
   <!-- ケースコンソール -->
-  <main id="mode-console" class="mode-panel">
+  <main id="mode-console" class="mode-panel" hidden>
     <section class="opener">
       <form id="open-form">
         <input id="open-input" type="text" placeholder="ケースID または エラーコード(4桁) を入力  例: CS-2025-100427 / 2104" autocomplete="off" />

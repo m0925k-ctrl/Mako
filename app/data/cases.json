@@ -108,5 +108,47 @@
     "work_history": [
       { "date": "2025-01-22", "summary": "プローブPVT-375BT ケーブル断線により交換。", "engineer": "FS 加藤", "parts_replaced": ["PVT-375BT"] }
     ]
+  },
+  {
+    "case_id": "CS-2025-100540",
+    "customer_id": "C-0001",
+    "customer_name": "○○中央病院",
+    "customer_equipment_id": "EQ-AG-5501",
+    "modality": "血管撮影",
+    "model": "Alphenix",
+    "model_code": "INFX-8000V",
+    "symptom": "カテ寝台が上下しない。E-7130 表示。",
+    "error_code": "E-7130",
+    "received_at": "2025-09-01T08:20:00",
+    "status": "未対応",
+    "assignee": "受付 木村",
+    "sla_level": "即日対応",
+    "hot_issue_site": true,
+    "next_inspection": null,
+    "remote_maintenance": { "available": true, "connection_checked_at": "2025-09-01T08:35:00", "connection_status": "接続OK", "last_alert": "2025-09-01 07:50 寝台ドライバ 過電流検知" },
+    "dispatch": { "area": "首都圏サービスステーション", "fs_contact": "FS 高橋 090-XXXX-1234", "night_contact": "夜間当番 佐々木 090-XXXX-0000", "estimated_arrival": "2025-09-01T11:00:00" },
+    "install_base": [ { "unit": "01", "model_code": "INFX-8000V", "serial": "8VA24ZXXXX" } ],
+    "work_history": [ { "date": "2025-02-10", "summary": "定期点検（PM）実施。", "engineer": "FS 高橋", "parts_replaced": [] } ]
+  },
+  {
+    "case_id": "CS-2025-100551",
+    "customer_id": "C-0002",
+    "customer_name": "△△総合医療センター",
+    "customer_equipment_id": "EQ-MR-2255",
+    "modality": "MRI",
+    "model": "Vantage Orian",
+    "model_code": "MRT-1550",
+    "symptom": "コールドヘッド異音、液面低下傾向。3300 発生。",
+    "error_code": "3300",
+    "received_at": "2025-09-02T07:10:00",
+    "status": "対応中",
+    "assignee": "受付 山本",
+    "sla_level": "即時対応要求",
+    "hot_issue_site": false,
+    "next_inspection": { "date": "2025-09-09", "type": "コールドヘッド点検" },
+    "remote_maintenance": { "available": true, "connection_checked_at": "2025-09-02T07:20:00", "connection_status": "接続OK", "last_alert": "2025-09-02 06:40 He液面 22% 低下傾向" },
+    "dispatch": { "area": "関西サービスステーション", "fs_contact": "FS 中村 090-XXXX-5678", "night_contact": "夜間当番 松田 090-XXXX-1111", "estimated_arrival": "2025-09-02T10:30:00" },
+    "install_base": [ { "unit": "01", "model_code": "MRT-1550", "serial": "15A24ZYYYY" } ],
+    "work_history": [ { "date": "2024-09-05", "summary": "コールドヘッド交換。", "engineer": "FS 渡辺", "parts_replaced": ["CH55-750N"] } ]
   }
 ]

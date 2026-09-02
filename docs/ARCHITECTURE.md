@@ -240,6 +240,18 @@ uvicorn app.main:app --port 8000
 > （`app/repositories/work_history.py`、`MAKO_WORKHISTORY_BACKEND`、既定は `MAKO_CASE_BACKEND` に追従）
 > として SR番号 で紐づける。**受付データ（intake）は別ソース**として今後接続する（下記 3.3・要スキーマ共有）。
 
+### 3.3a 受付一覧（intake queue）— 入口
+
+受付担当のホーム画面。受付データ源（現状はケース源のビュー）を一覧表示し、
+キーワード・状態で絞り込み、各行から **「開く」（コンソール）** と
+**「CEディスパッチ」** に直行できる。`GET /api/receptions?q=&status=&limit=`
+（`app/console.py: list_receptions`）。
+
+> **受付データが別テーブルの場合**：受付一覧の元を専用の受付テーブル/クエリに切り替える。
+> `list_receptions` は `store.list_cases()`（＝ケース源）を参照しているため、受付専用ソースが
+> 判明したら `ReceptionRepository` を追加して差し替える（列は SR番号/受付日/得意先/機種/現象/
+> 重要度/システムダウン/リモメン/状態）。
+
 ### 3.3 受付 → CE ディスパッチ（作業指示メール）
 
 受付担当が現地 CE（カスタマーエンジニア）へ作業指示をメールで送るフロー。

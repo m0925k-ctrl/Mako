@@ -51,6 +51,20 @@ class MailRenderResponse(BaseModel):
     body: str
 
 
+class ReceptionRow(BaseModel):
+    case_id: str
+    received_at: str = ""
+    customer_name: str = ""
+    modality: str = ""
+    model: str = ""
+    symptom: str = ""
+    sla_level: str = ""
+    system_down: str = "-"
+    remote: str = ""
+    status: str = ""
+    hot_issue_site: bool = False
+
+
 class DispatchRequest(BaseModel):
     to: str | None = Field(default=None, description="宛先メール。未指定ならCEの解決メール")
     subject: str | None = Field(default=None, description="編集済み件名。未指定ならテンプレート生成")

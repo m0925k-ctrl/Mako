@@ -86,6 +86,20 @@ def test_mail_ctfs_board_includes_error():
     assert "2104" in r.json()["body"]
 
 
+def test_receptions_list():
+    r = client.get("/api/receptions")
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) >= 3
+    assert {"case_id", "customer_name", "status", "sla_level"} <= set(rows[0])
+
+
+def test_receptions_keyword_filter():
+    r = client.get("/api/receptions", params={"q": "中央"})
+    rows = r.json()
+    assert rows and all("中央" in x["customer_name"] for x in rows)
+
+
 def test_ce_dispatch_draft():
     # 送信せず下書き生成。作業指示に現地情報(入館方法)が入ること。
     r = client.post(

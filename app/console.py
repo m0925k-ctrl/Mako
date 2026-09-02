@@ -25,6 +25,39 @@ def build_console(case_id: str) -> dict | None:
     return _assemble(case)
 
 
+def _reception_row(c: dict) -> dict:
+    """受付一覧(intake queue)の1行を作る。"""
+    rm = c.get("remote_maintenance", {}) or {}
+    return {
+        "case_id": c.get("case_id", ""),
+        "received_at": c.get("received_at", ""),
+        "customer_name": c.get("customer_name", ""),
+        "modality": c.get("modality", "") or "",
+        "model": c.get("model", ""),
+        "symptom": c.get("symptom", ""),
+        "sla_level": c.get("sla_level", ""),
+        "system_down": c.get("system_down", "") or "-",
+        "remote": "有" if rm.get("available") else "無",
+        "status": c.get("status", "") or "未対応",
+        "hot_issue_site": bool(c.get("hot_issue_site")),
+    }
+
+
+def list_receptions(limit: int = 100, keyword: str | None = None, status: str | None = None) -> list[dict]:
+    """受付一覧を返す(受付データ源のビュー)。keyword/status で絞り込み。"""
+    rows = [_reception_row(c) for c in store.list_cases(limit)]
+    if keyword:
+        kw = keyword.strip().lower()
+        rows = [
+            r for r in rows
+            if kw in f"{r['case_id']} {r['customer_name']} {r['model']} {r['symptom']}".lower()
+        ]
+    if status:
+        rows = [r for r in rows if r["status"] == status]
+    rows.sort(key=lambda r: r.get("received_at") or "", reverse=True)
+    return rows
+
+
 def build_console_by_error(code: str) -> list[dict]:
     """エラーコードから該当ケースの集約コンソールを構築する(複数該当あり)。"""
     return [_assemble(c) for c in store.find_cases_by_error(code)]
