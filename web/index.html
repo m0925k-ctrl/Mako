@@ -1,0 +1,631 @@
+<title>Mako 装置カルテ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --ground: #eaeff1;
+    --surface: #ffffff;
+    --surface-2: #f5f9f9;
+    --ink: #14202a;
+    --muted: #566873;
+    --faint: #8697a2;
+    --border: #dde6e9;
+    --border-strong: #c8d5da;
+    --accent: #0d7c86;
+    --accent-ink: #095a62;
+    --accent-soft: #e2f1f2;
+    --good: #2f9e6f;   --good-bg: #e6f4ec;
+    --warn: #b9741d;   --warn-bg: #f8eddb;
+    --crit: #cf4242;   --crit-bg: #fbe7e7;
+    --shadow: 0 1px 2px rgba(20,32,42,.06), 0 8px 24px -12px rgba(20,32,42,.18);
+    --radius: 12px;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #0d1418;
+      --surface: #151f26;
+      --surface-2: #1b2731;
+      --ink: #e7eef2;
+      --muted: #95a7b1;
+      --faint: #6d808b;
+      --border: #26333c;
+      --border-strong: #33434e;
+      --accent: #2fb2bd;
+      --accent-ink: #6fd3db;
+      --accent-soft: #123138;
+      --good: #45bd8a;   --good-bg: #10281f;
+      --warn: #d69a45;   --warn-bg: #2c2113;
+      --crit: #e07070;   --crit-bg: #2e1515;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0d1418;
+    --surface: #151f26;
+    --surface-2: #1b2731;
+    --ink: #e7eef2;
+    --muted: #95a7b1;
+    --faint: #6d808b;
+    --border: #26333c;
+    --border-strong: #33434e;
+    --accent: #2fb2bd;
+    --accent-ink: #6fd3db;
+    --accent-soft: #123138;
+    --good: #45bd8a;   --good-bg: #10281f;
+    --warn: #d69a45;   --warn-bg: #2c2113;
+    --crit: #e07070;   --crit-bg: #2e1515;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "Roboto Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- app shell ---------- */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 236px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 22px 16px;
+    position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent); color: #fff; display: grid; place-items: center;
+    font-size: 19px;
+  }
+  .brand b { font-size: 19px; font-weight: 900; letter-spacing: .01em; }
+  .brand small { display: block; color: var(--faint); font-size: 11.5px; font-weight: 500; }
+  .nav { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
+  .nav button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left; cursor: pointer;
+    border: 0; background: transparent; color: var(--muted);
+    padding: 10px 12px; border-radius: 9px;
+    font: inherit; font-size: 14.5px; font-weight: 500;
+    transition: background .12s, color .12s;
+  }
+  .nav button .ico { width: 20px; text-align: center; font-size: 16px; }
+  .nav button:hover { background: var(--surface-2); color: var(--ink); }
+  .nav button.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
+  .side-note {
+    margin-top: auto; font-size: 11.5px; color: var(--faint);
+    border-top: 1px solid var(--border); padding-top: 14px; line-height: 1.5;
+  }
+  .side-note code { font-family: "Roboto Mono", monospace; font-size: 10.5px; }
+
+  .main { flex: 1; min-width: 0; padding: 30px 34px 64px; max-width: 1180px; }
+  h1.view-title { font-size: 26px; font-weight: 900; margin: 0 0 4px; letter-spacing: .01em; text-wrap: balance; }
+  .view-sub { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- metric tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 26px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 15px 16px;
+  }
+  .tile .k { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .tile .v { font-size: 30px; font-weight: 900; line-height: 1.15; margin-top: 2px; }
+  .tile .v small { font-size: 13px; font-weight: 500; color: var(--faint); }
+  .tile.alert .v { color: var(--crit); }
+
+  .cols { display: grid; grid-template-columns: 1.55fr 1fr; gap: 22px; align-items: start; }
+  h2.sec { font-size: 15px; font-weight: 700; margin: 4px 0 12px; letter-spacing: .02em; }
+
+  /* ---------- report card ---------- */
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .rcard {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .rcard > summary {
+    list-style: none; cursor: pointer; padding: 13px 15px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .rcard > summary::-webkit-details-marker { display: none; }
+  .rcard > summary::after { content: "⌄"; margin-left: auto; color: var(--faint); font-size: 18px; transition: transform .18s; }
+  .rcard[open] > summary::after { transform: rotate(180deg); }
+  .rcard .head-main { min-width: 0; }
+  .rcard .head-main .t { font-weight: 700; font-size: 14.5px; }
+  .rcard .head-main .m { color: var(--muted); font-size: 12.5px; }
+  .rcard .body { padding: 4px 15px 16px; border-top: 1px solid var(--border); }
+  .kv { margin: 12px 0 0; }
+  .kv .label { font-size: 11.5px; font-weight: 700; color: var(--accent-ink); letter-spacing: .04em; }
+  .kv .val { font-size: 14px; white-space: pre-wrap; }
+
+  /* avatar */
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 16px;
+  }
+  .avatar.sm { width: 30px; height: 30px; font-size: 13px; }
+
+  /* photos */
+  .photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .photo {
+    width: 128px; height: 92px; border-radius: 8px; border: 1px solid var(--border);
+    display: grid; place-items: center; text-align: center; padding: 6px;
+    color: #fff; font-size: 11px; font-weight: 500; line-height: 1.3;
+  }
+
+  /* ---------- badges ---------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  }
+  .b-untouched { background: var(--crit-bg); color: var(--crit); }
+  .b-progress { background: var(--warn-bg); color: var(--warn); }
+  .b-done { background: var(--good-bg); color: var(--good); }
+  .b-visit { background: var(--accent-soft); color: var(--accent-ink); }
+  .prio { font-size: 12px; font-weight: 700; }
+  .prio-高 { color: var(--crit); }
+  .prio-中 { color: var(--warn); }
+  .prio-低 { color: var(--faint); }
+
+  /* task line */
+  .tline { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .tline:last-child { border-bottom: 0; }
+  .tline .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tline .c { font-weight: 500; margin: 3px 0 2px; }
+  .tline .meta { color: var(--faint); font-size: 12px; }
+  .overdue { color: var(--crit); font-weight: 700; }
+
+  /* ---------- karte ---------- */
+  .selrow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .field { flex: 1; min-width: 200px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 5px; }
+  select {
+    width: 100%; padding: 10px 12px; border-radius: 9px;
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: 14px; cursor: pointer;
+  }
+  select:focus-visible, .nav button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .device-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 22px; display: grid; grid-template-columns: 1fr auto; gap: 20px; margin-bottom: 22px;
+  }
+  .device-panel .dname { font-size: 20px; font-weight: 900; }
+  .spec { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin-top: 12px; font-size: 13.5px; }
+  .spec dt { color: var(--muted); font-weight: 500; }
+  .spec dd { margin: 0; font-weight: 500; }
+  .maplink {
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+    padding: 9px 14px; border-radius: 9px; text-decoration: none;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 13.5px;
+  }
+  .maplink:hover { background: var(--accent-ink); }
+  .addr { margin-top: 12px; color: var(--muted); font-size: 13px; }
+  .pm-chip {
+    align-self: start; text-align: center; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; min-width: 130px;
+  }
+  .pm-chip .lab { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  .pm-chip .date { font-size: 17px; font-weight: 900; margin-top: 2px; }
+
+  /* timeline */
+  .timeline { position: relative; margin-left: 8px; padding-left: 26px; }
+  .timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+  .tl-item { position: relative; padding-bottom: 14px; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -26px; top: 16px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--border);
+  }
+  .panel-sub {
+    background: var(--crit-bg); border: 1px solid transparent; border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 22px;
+  }
+  .panel-sub h2 { margin: 0 0 8px; font-size: 14px; }
+
+  /* ---------- board ---------- */
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .col-head { font-weight: 700; font-size: 14.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .col-head .count { color: var(--faint); font-weight: 500; }
+  .tcard {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+    padding: 13px 14px; margin-bottom: 10px;
+  }
+  .tcard.is-overdue { border-color: var(--crit); }
+  .tcard .h { display: flex; align-items: center; gap: 8px; }
+  .tcard .dev { color: var(--faint); font-size: 11.5px; margin: 2px 0 4px; }
+  .tcard .c { font-weight: 500; font-size: 13.5px; }
+  .tcard .meta { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+  .tcard .note { color: var(--muted); font-size: 11.5px; margin-top: 5px; }
+
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .toolbar .field { min-width: 160px; }
+  .count-line { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .empty { color: var(--faint); font-size: 14px; padding: 20px; text-align: center; background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius); }
+  .demo-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: var(--accent-ink); background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* mobile */
+  .menu-btn { display: none; }
+  @media (max-width: 860px) {
+    .app { flex-direction: column; }
+    .sidebar {
+      width: 100%; height: auto; position: sticky; top: 0; z-index: 20;
+      flex-direction: row; align-items: center; gap: 10px;
+      padding: 12px 16px; overflow-x: auto;
+    }
+    .brand { padding: 0; }
+    .brand small { display: none; }
+    .nav { flex-direction: row; margin-top: 0; margin-left: auto; }
+    .nav button .lab { display: none; }
+    .nav button { padding: 9px 11px; }
+    .nav button .ico { font-size: 18px; }
+    .side-note { display: none; }
+    .main { padding: 22px 18px 60px; }
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+    .device-panel { grid-template-columns: 1fr; }
+    .board { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark">🩺</span>
+      <span><b>Mako</b><small>装置カルテ・ダッシュボード</small></span>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-note">
+      表示中はダミーデータです。<br />
+      実運用では <code>Forms → SharePoint</code> の回答に差し替えます。
+    </div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* ============================ データ ============================ */
+const HOSPITALS = [
+  { id:"H01", name:"さくら総合病院", address:"東京都千代田区丸の内1-9-1", lat:35.6812, lng:139.7671, contact:"医療技術部 放射線科　03-1234-5678" },
+  { id:"H02", name:"みどり台クリニック", address:"東京都港区芝公園4-2-8", lat:35.6586, lng:139.7454, contact:"事務長　03-2345-6789" },
+  { id:"H03", name:"中央医療センター", address:"東京都新宿区西新宿2-8-1", lat:35.6895, lng:139.6917, contact:"臨床工学科　03-3456-7890" },
+];
+const DEVICES = [
+  { id:"D-MRI-01", hospital_id:"H01", name:"MRI装置", model:"SIGNA Explorer 1.5T", serial:"MR15-88213", location:"放射線科 MRI室", installed_at:"2021-04-10", next_pm:"2026-10-15" },
+  { id:"D-CT-01", hospital_id:"H01", name:"CTスキャナ", model:"Aquilion Lightning 80列", serial:"CT80-40219", location:"放射線科 CT室", installed_at:"2022-09-01", next_pm:"2026-09-20" },
+  { id:"D-ENDO-01", hospital_id:"H02", name:"内視鏡システム", model:"EVIS X1 CV-1500", serial:"EN15-10234", location:"内視鏡室", installed_at:"2023-03-15", next_pm:"2026-11-05" },
+  { id:"D-INC-01", hospital_id:"H03", name:"保育器", model:"Dräger Isolette C2000", serial:"IC20-77120", location:"NICU", installed_at:"2020-06-20", next_pm:"2026-09-12" },
+  { id:"D-MON-05", hospital_id:"H03", name:"生体情報モニタ", model:"BSM-6000", serial:"BS60-22014", location:"ICU ベッド5", installed_at:"2019-11-01", next_pm:"2026-10-01" },
+];
+const ENGINEERS = [
+  { id:"E01", name:"佐藤 健一", team:"画像診断チーム" },
+  { id:"E02", name:"鈴木 大輔", team:"生体機器チーム" },
+  { id:"E03", name:"田中 陽子", team:"画像診断チーム" },
+];
+const REPORTS = [
+  { id:"R-2026-0021", submitted_at:"2026-08-31T13:20", device_id:"D-MRI-01", engineer_id:"E01", visit_type:"緊急対応",
+    work_done:"画像にアーチファクト(ノイズ)が出るとの連絡で緊急訪問。", issue:"RFコイルのコネクタ接触不良を確認。特定シーケンスでノイズ混入。",
+    action:"コネクタ清掃・再固定、RFキャリブレーション実施。", parts:"なし", result:"ファントム撮像でアーチファクト消失。臨床画像も良好。",
+    handover:"コネクタ樹脂に軽微な劣化。次回定期でコイルケーブルの予防交換を提案予定。", photos:["mri_coil_connector","mri_phantom_after"] },
+  { id:"R-2026-0018", submitted_at:"2026-06-15T10:00", device_id:"D-MRI-01", engineer_id:"E03", visit_type:"定期点検",
+    work_done:"半年定期点検。ヘリウム液面・圧力、冷却系、各シーケンス動作確認。", issue:"特になし。ヘリウム液面72%で正常範囲。",
+    action:"エア冷却フィルター清掃、勾配コイル温度センサー確認。", parts:"冷却フィルター(P/N MR-AF10) x2 交換", result:"全項目基準内。",
+    handover:"液面の減少ペースは正常。次回は10月。", photos:["mri_helium_gauge"] },
+  { id:"R-2026-0009", submitted_at:"2026-02-20T14:30", device_id:"D-MRI-01", engineer_id:"E01", visit_type:"定期点検",
+    work_done:"半年定期点検。", issue:"冷却水ポンプからわずかに異音。", action:"ポンプベアリング給脂、水質チェック。異音軽減。",
+    parts:"なし", result:"運転正常。異音は許容範囲まで低減。", handover:"ポンプは経過観察。次回訪問時に再確認のこと。", photos:[] },
+  { id:"R-2026-0020", submitted_at:"2026-08-29T11:10", device_id:"D-CT-01", engineer_id:"E03", visit_type:"定期点検",
+    work_done:"定期点検＋管球使用状況の確認。", issue:"X線管球の使用回数が寿命目安の80%に到達。",
+    action:"各部清掃、キャリブレーション、線量確認。管球交換の見積を案内。", parts:"なし", result:"画質・線量とも基準内。",
+    handover:"管球は年内交換を推奨。事務長へ見積提出が必要。", photos:["ct_tube_hours"] },
+  { id:"R-2026-0019", submitted_at:"2026-08-25T15:45", device_id:"D-ENDO-01", engineer_id:"E02", visit_type:"修理",
+    work_done:"内視鏡画像の色ムラ発生で対応。", issue:"光源ユニットのLED出力低下を確認。",
+    action:"光源ユニットを交換、ホワイトバランス再調整。", parts:"LED光源ユニット(P/N LS-X1) x1 交換", result:"色再現正常化。医師立会いで確認済み。",
+    handover:"旧ユニットは持ち帰り解析。予備在庫の補充を社内手配。", photos:["endo_light_unit"] },
+  { id:"R-2026-0017", submitted_at:"2026-08-28T09:30", device_id:"D-INC-01", engineer_id:"E02", visit_type:"定期点検",
+    work_done:"保育器の定期点検。温度・湿度精度、アラーム、酸素濃度センサー確認。", issue:"湿度センサーの表示に2%の偏差。",
+    action:"湿度センサー校正、アラーム動作試験。", parts:"なし", result:"校正後、偏差0.5%以内。全アラーム正常動作。",
+    handover:"酸素センサーは残寿命3か月目安。次回訪問時に交換予定で部品手配を依頼された。", photos:["incubator_panel"] },
+  { id:"R-2026-0022", submitted_at:"2026-09-01T16:00", device_id:"D-MON-05", engineer_id:"E02", visit_type:"設置・初期点検",
+    work_done:"生体情報モニタの更新設置後、初回点検。", issue:"特になし。",
+    action:"各パラメータ校正、ネットワーク接続確認、看護師へ操作説明。", parts:"なし", result:"全項目正常。セントラルモニタとの通信も確認。",
+    handover:"旧機の操作との違いを一覧にして後日提出してほしいと依頼あり。", photos:["monitor_setup"] },
+];
+const TASKS = [
+  { id:"T-0041", device_id:"D-CT-01", content:"X線管球交換の見積を作成し事務長へ提出", requested_at:"2026-08-29", due:"2026-09-08", status:"対応中", assignee_id:"E03", related_report:"R-2026-0020", priority:"高", note:"年内交換を推奨。営業と連携。" },
+  { id:"T-0042", device_id:"D-INC-01", content:"酸素濃度センサーの交換部品を手配し次回訪問で交換", requested_at:"2026-08-28", due:"2026-09-15", status:"未対応", assignee_id:"E02", related_report:"R-2026-0017", priority:"高", note:"残寿命3か月目安。NICUのため確実に。" },
+  { id:"T-0043", device_id:"D-MRI-01", content:"RFコイルケーブルの予防交換を次回定期点検で提案・実施", requested_at:"2026-08-31", due:"2026-10-15", status:"未対応", assignee_id:"E01", related_report:"R-2026-0021", priority:"中", note:"コネクタ樹脂の劣化あり。" },
+  { id:"T-0044", device_id:"D-MON-05", content:"旧機との操作の違い一覧を作成し看護部へ提出", requested_at:"2026-09-01", due:"2026-09-05", status:"未対応", assignee_id:"E02", related_report:"R-2026-0022", priority:"中", note:"" },
+  { id:"T-0045", device_id:"D-ENDO-01", content:"LED光源ユニットの予備在庫を社内補充", requested_at:"2026-08-25", due:"2026-09-02", status:"完了", assignee_id:"E02", related_report:"R-2026-0019", priority:"低", note:"9/1 発注済み。" },
+];
+
+/* この試作のデモ基準日 */
+const NOW = new Date("2026-09-02");
+
+/* ============================ 参照・整形 ============================ */
+const REPORT_FIELDS = [
+  ["visit_type","対応区分"], ["work_done","作業内容"], ["issue","発生した事象・不具合"],
+  ["action","対応・処置"], ["parts","使用・交換部品"], ["result","結果・動作確認"], ["handover","次回への申し送り"],
+];
+const byId = (arr) => Object.fromEntries(arr.map(x => [x.id, x]));
+const HMAP = byId(HOSPITALS), DMAP = byId(DEVICES), EMAP = byId(ENGINEERS);
+const hospOfDevice = (d) => HMAP[d.hospital_id];
+
+function enrichReport(r) {
+  const dev = DMAP[r.device_id], eng = EMAP[r.engineer_id], hosp = hospOfDevice(dev);
+  return { ...r, dev, eng, hosp, when: new Date(r.submitted_at) };
+}
+function enrichTask(t) {
+  const dev = DMAP[t.device_id], hosp = hospOfDevice(dev), eng = EMAP[t.assignee_id];
+  return { ...t, dev, hosp, eng, dueDate: new Date(t.due) };
+}
+const R = REPORTS.map(enrichReport).sort((a,b) => b.when - a.when);
+const T = TASKS.map(enrichTask).sort((a,b) => ({高:0,中:1,低:2}[a.priority]-{高:0,中:1,低:2}[b.priority]) || (a.dueDate-b.dueDate));
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const fmtDT = (d) => `${fmtDate(d)} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+const mapUrl = (h) => `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`;
+const isOverdue = (t) => t.dueDate < NOW && t.status !== "完了";
+
+function hue(str) { let h = 0; for (const ch of str) h = (h*31 + ch.charCodeAt(0)) % 360; return h; }
+function avatar(name, cls="") {
+  const h = hue(name);
+  return `<span class="avatar ${cls}" style="background:hsl(${h} 42% 46%)">${esc((name||"?").trim()[0]||"?")}</span>`;
+}
+function photoTile(name) {
+  const h = hue(name);
+  return `<div class="photo" style="background:hsl(${h} 38% 45%)">📷<br>${esc(name)}</div>`;
+}
+const STATUS_CLASS = { "未対応":"b-untouched", "対応中":"b-progress", "完了":"b-done" };
+const statusBadge = (s) => `<span class="badge ${STATUS_CLASS[s]||""}">${esc(s)}</span>`;
+const prioTag = (p) => `<span class="prio prio-${p}">${p==="高"?"🔴":p==="中"?"🟡":"⚪"} ${esc(p)}</span>`;
+
+function reportBodyHtml(r) {
+  let h = "";
+  for (const [k,label] of REPORT_FIELDS) {
+    if (!r[k]) continue;
+    h += `<div class="kv"><div class="label">${esc(label)}</div><div class="val">${esc(r[k])}</div></div>`;
+  }
+  if (r.photos && r.photos.length) {
+    h += `<div class="kv"><div class="label">写真</div><div class="photos">${r.photos.map(photoTile).join("")}</div></div>`;
+  }
+  return h;
+}
+function reportCardHtml(r, showDevice=true) {
+  const head = showDevice ? `${esc(r.hosp.name)} ／ ${esc(r.dev.name)}` : fmtDate(r.when);
+  return `<details class="rcard">
+    <summary>
+      ${avatar(r.eng.name)}
+      <span class="head-main">
+        <span class="t">${head} <span class="badge b-visit">${esc(r.visit_type)}</span></span><br>
+        <span class="m">${fmtDT(r.when)}　担当 ${esc(r.eng.name)}　<span class="mono">${esc(r.id)}</span></span>
+      </span>
+    </summary>
+    <div class="body">
+      <div class="kv"><div class="val">${esc(r.dev.model)} / SN:<span class="mono">${esc(r.dev.serial)}</span>　—　${esc(r.dev.location)}</div></div>
+      ${reportBodyHtml(r)}
+    </div>
+  </details>`;
+}
+
+/* ============================ ビュー ============================ */
+function viewSummary() {
+  const open = T.filter(t => t.status !== "完了");
+  const overdue = open.filter(isOverdue);
+  const pmSoon = DEVICES.map(d => ({...d, pm:new Date(d.next_pm)}))
+    .filter(d => d.pm <= new Date(NOW.getTime() + 30*864e5))
+    .sort((a,b) => a.pm - b.pm);
+
+  const tiles = [
+    ["病院数", HOSPITALS.length, ""],
+    ["管理装置数", DEVICES.length, ""],
+    ["作業報告 (累計)", R.length, ""],
+    ["未完了の残務", open.length, ""],
+    ["点検30日以内", pmSoon.length, "alert"],
+  ];
+  return `
+  <h1 class="view-title">サマリー<span class="demo-tag">DEMO / サンプルデータ</span></h1>
+  <p class="view-sub">現場から集まった作業報告と、顧客からの頼まれごと・残務の全体像。</p>
+  <div class="tiles">
+    ${tiles.map(([k,v,c]) => `<div class="tile ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}
+  </div>
+  <div class="cols">
+    <section>
+      <h2 class="sec">最近の作業報告</h2>
+      <div class="stack">${R.slice(0,5).map(r => reportCardHtml(r)).join("")}</div>
+    </section>
+    <section>
+      <h2 class="sec">要対応の残務</h2>
+      <div class="stack" style="gap:0">
+        ${open.map(t => `<div class="tline">
+          <div class="top">${statusBadge(t.status)} ${prioTag(t.priority)} <b>${esc(t.hosp.name)}</b>
+            ${isOverdue(t)?'<span class="overdue">⏰ 期限超過</span>':''}</div>
+          <div class="c">${esc(t.dev.name)}：${esc(t.content)}</div>
+          <div class="meta">期限 ${fmtDate(t.dueDate)}　担当 ${esc(t.eng.name)}　<span class="mono">${esc(t.id)}</span></div>
+        </div>`).join("")}
+      </div>
+      <h2 class="sec" style="margin-top:22px">点検が近い装置</h2>
+      <div class="stack" style="gap:0">
+        ${pmSoon.map(d => `<div class="tline">
+          <div class="c"><b>${esc(HMAP[d.hospital_id].name)}</b> ／ ${esc(d.name)}</div>
+          <div class="meta">次回点検 ${fmtDate(d.pm)}　<span class="mono">${esc(d.id)}</span></div>
+        </div>`).join("")}
+      </div>
+    </section>
+  </div>`;
+}
+
+let karteHosp = HOSPITALS[0].id;
+let karteDev = null;
+
+function viewKarte() {
+  const hosp = HMAP[karteHosp];
+  const devs = DEVICES.filter(d => d.hospital_id === karteHosp);
+  if (!karteDev || !devs.some(d => d.id === karteDev)) karteDev = devs[0].id;
+  const dev = DMAP[karteDev];
+  const inst = new Date(dev.installed_at), pm = new Date(dev.next_pm);
+  const hist = R.filter(r => r.device_id === dev.id);
+  const openTasks = T.filter(t => t.device_id === dev.id && t.status !== "完了");
+
+  return `
+  <h1 class="view-title">装置カルテ</h1>
+  <p class="view-sub">病院と装置を選ぶと、その1台の「いつ・誰が・何をしたか」が時系列で残ります。</p>
+  <div class="selrow">
+    <div class="field">
+      <label>病院</label>
+      <select id="sel-hosp">${HOSPITALS.map(h => `<option value="${h.id}" ${h.id===karteHosp?"selected":""}>${esc(h.name)}</option>`).join("")}</select>
+    </div>
+    <div class="field">
+      <label>装置</label>
+      <select id="sel-dev">${devs.map(d => `<option value="${d.id}" ${d.id===karteDev?"selected":""}>${esc(d.name)}（${esc(d.model)}）</option>`).join("")}</select>
+    </div>
+  </div>
+
+  <div class="device-panel">
+    <div>
+      <div class="dname">${esc(dev.name)}</div>
+      <dl class="spec">
+        <dt>型番</dt><dd>${esc(dev.model)}</dd>
+        <dt>製造番号 (SN)</dt><dd class="mono">${esc(dev.serial)}</dd>
+        <dt>設置場所</dt><dd>${esc(hosp.name)} ／ ${esc(dev.location)}</dd>
+        <dt>設置日</dt><dd class="mono">${fmtDate(inst)}</dd>
+      </dl>
+      <div class="addr">📍 ${esc(hosp.address)}　・　連絡先: ${esc(hosp.contact)}</div>
+      <a class="maplink" href="${mapUrl(hosp)}" target="_blank" rel="noopener">🗺️ Googleマップで開く</a>
+    </div>
+    <div class="pm-chip">
+      <div class="lab">次回点検</div>
+      <div class="date mono">${fmtDate(pm)}</div>
+    </div>
+  </div>
+
+  ${openTasks.length ? `<div class="panel-sub">
+    <h2>🗂️ この装置の未完了の残務（${openTasks.length}）</h2>
+    <div class="stack" style="gap:0">
+      ${openTasks.map(t => `<div class="tline" style="border-color:rgba(0,0,0,.06)">
+        <div class="top">${statusBadge(t.status)} ${prioTag(t.priority)} 期限 <span class="mono">${fmtDate(t.dueDate)}</span> ${isOverdue(t)?'<span class="overdue">⏰ 超過</span>':''}</div>
+        <div class="c">${esc(t.content)}</div>
+        <div class="meta">担当 ${esc(t.eng.name)}　関連 <span class="mono">${esc(t.related_report)}</span>　<span class="mono">${esc(t.id)}</span></div>
+      </div>`).join("")}
+    </div>
+  </div>` : ""}
+
+  <h2 class="sec">🗓️ 作業履歴（${hist.length} 件）</h2>
+  ${hist.length ? `<div class="timeline">
+    ${hist.map(r => `<div class="tl-item">${reportCardHtml(r, false)}</div>`).join("")}
+  </div>` : `<div class="empty">この装置の作業履歴はまだありません。</div>`}
+  `;
+}
+
+let repHosp = "すべて", repEng = "すべて", repKw = "";
+function viewReports() {
+  const engNames = [...new Set(R.map(r => r.eng.name))];
+  let list = R;
+  if (repHosp !== "すべて") list = list.filter(r => r.hosp.name === repHosp);
+  if (repEng !== "すべて") list = list.filter(r => r.eng.name === repEng);
+  if (repKw.trim()) {
+    const kw = repKw.trim().toLowerCase();
+    list = list.filter(r => JSON.stringify(r).toLowerCase().includes(kw));
+  }
+  return `
+  <h1 class="view-title">作業報告</h1>
+  <p class="view-sub">病院・担当者・キーワードで、過去の作業報告を横断的に探せます。</p>
+  <div class="toolbar">
+    <div class="field"><label>病院</label>
+      <select id="rf-hosp"><option>すべて</option>${HOSPITALS.map(h => `<option ${h.name===repHosp?"selected":""}>${esc(h.name)}</option>`).join("")}</select></div>
+    <div class="field"><label>担当者</label>
+      <select id="rf-eng"><option>すべて</option>${engNames.map(n => `<option ${n===repEng?"selected":""}>${esc(n)}</option>`).join("")}</select></div>
+    <div class="field" style="flex:2"><label>キーワード</label>
+      <input id="rf-kw" type="text" value="${esc(repKw)}" placeholder="装置・不具合・部品名など"
+        style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);font:inherit;font-size:14px"></div>
+  </div>
+  <div class="count-line">${list.length} 件</div>
+  <div class="stack">${list.length ? list.map(r => reportCardHtml(r)).join("") : '<div class="empty">条件に合う報告がありません。</div>'}</div>
+  `;
+}
+
+let boardHosp = "すべて";
+function viewBoard() {
+  const list = boardHosp === "すべて" ? T : T.filter(t => t.hosp.name === boardHosp);
+  const statuses = ["未対応","対応中","完了"];
+  return `
+  <h1 class="view-title">残務ボード</h1>
+  <p class="view-sub">顧客からの頼まれごと・残務を、対応状況ごとに。期限超過は赤で目立ちます。</p>
+  <div class="toolbar">
+    <div class="field" style="max-width:260px"><label>病院で絞り込み</label>
+      <select id="bf-hosp"><option>すべて</option>${HOSPITALS.map(h => `<option ${h.name===boardHosp?"selected":""}>${esc(h.name)}</option>`).join("")}</select></div>
+  </div>
+  <div class="board">
+    ${statuses.map(s => {
+      const sub = list.filter(t => t.status === s);
+      return `<div class="col">
+        <div class="col-head">${statusBadge(s)} <span class="count">${sub.length}</span></div>
+        ${sub.map(t => `<div class="tcard ${isOverdue(t)?"is-overdue":""}">
+          <div class="h">${prioTag(t.priority)} <b>${esc(t.hosp.name)}</b></div>
+          <div class="dev">装置: ${esc(t.dev.name)}</div>
+          <div class="c">${esc(t.content)}</div>
+          <div class="meta">${isOverdue(t)?`<span class="overdue">⏰ 期限 ${fmtDate(t.dueDate)}（超過）</span>`:`期限 ${fmtDate(t.dueDate)}`}　担当 ${esc(t.eng.name)}</div>
+          <div class="meta">関連 <span class="mono">${esc(t.related_report)}</span>　<span class="mono">${esc(t.id)}</span></div>
+          ${t.note ? `<div class="note">📝 ${esc(t.note)}</div>` : ""}
+        </div>`).join("") || '<div class="empty">なし</div>'}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+/* ============================ ルーティング ============================ */
+const VIEWS = [
+  { id:"summary", ico:"📊", label:"サマリー", render:viewSummary },
+  { id:"karte",   ico:"🏥", label:"装置カルテ", render:viewKarte },
+  { id:"reports", ico:"📋", label:"作業報告", render:viewReports },
+  { id:"board",   ico:"🗂️", label:"残務ボード", render:viewBoard },
+];
+let current = "summary";
+
+function renderNav() {
+  document.getElementById("nav").innerHTML = VIEWS.map(v =>
+    `<button data-view="${v.id}" class="${v.id===current?"active":""}">
+      <span class="ico">${v.ico}</span><span class="lab">${v.label}</span></button>`).join("");
+  document.querySelectorAll("#nav button").forEach(b =>
+    b.onclick = () => { current = b.dataset.view; render(); });
+}
+
+function render() {
+  renderNav();
+  const main = document.getElementById("main");
+  main.innerHTML = VIEWS.find(v => v.id === current).render();
+  main.scrollTop = 0; window.scrollTo(0,0);
+  wire();
+}
+
+function wire() {
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on("sel-hosp","change", e => { karteHosp = e.target.value; karteDev = null; render(); });
+  on("sel-dev","change", e => { karteDev = e.target.value; render(); });
+  on("rf-hosp","change", e => { repHosp = e.target.value; render(); });
+  on("rf-eng","change", e => { repEng = e.target.value; render(); });
+  on("rf-kw","input", e => { repKw = e.target.value; const l=document.querySelector(".stack"); if(!l) return;
+    // 再描画（フォーカス維持のため入力欄は据え置き→簡易に全再描画）
+    const pos = e.target.selectionStart; render();
+    const nk = document.getElementById("rf-kw"); if(nk){ nk.focus(); nk.setSelectionRange(pos,pos); } });
+  on("bf-hosp","change", e => { boardHosp = e.target.value; render(); });
+}
+
+render();
+</script>
