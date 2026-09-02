@@ -13,12 +13,17 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
 DATA_DIR = Path(__file__).parent / "sample_data"
+
+# データ源の切り替え: "sample"(既定) はサンプルJSON、"oracle" は Oracle CRM 直結。
+#   例) MAKO_SOURCE=oracle streamlit run app/dashboard.py
+SOURCE = os.environ.get("MAKO_SOURCE", "sample").lower()
 
 # 作業報告の項目定義（＝将来の Microsoft Forms の質問項目）
 REPORT_FIELDS = [
@@ -37,6 +42,15 @@ PRIORITY_ORDER = {"高": 0, "中": 1, "低": 2}
 
 
 def _read(name: str):
+    """レコード(list[dict])を返す。データ源に応じて切り替える。
+
+    どちらの源でも、返す dict のキーは sample_data/*.json と同じにすること。
+    そうすれば以降の結合・整形（load_devices など）はそのまま使える。
+    """
+    key = name.replace(".json", "")
+    if SOURCE == "oracle":
+        import data_oracle  # 直結時のみ import（python-oracledb が必要）
+        return data_oracle.fetch(key)
     return json.loads((DATA_DIR / name).read_text(encoding="utf-8"))
 
 

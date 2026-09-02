@@ -4,43 +4,53 @@
 PC/スマホで閲覧（**ダッシュボード**）を、一本につなぐための設計書です。
 実装はこの順（マスタ → Forms → SharePoint → Power Automate → ダッシュボード）で進めます。
 
-### 使う環境（前提）
-- **AI**：**Copilot Enterprise**（キヤノン側テナント）。自動要約はフロー内の
-  **AI Builder（GPTプロンプト）／ Copilot Studio** を利用（＝同じテナント・データ境界内）。
-- **CRM（顧客・装置マスタ）**：**Oracle CRM** から取り込む（両社の社員が取得可能）。
+### 使う環境（前提・確認済み）
+- **Oracle CRM に DB 直接接続できる**。CRM には次まで入っている：
+  **顧客・設置先／装置・型番・SN／契約・保守情報／過去の作業・対応履歴**。
+  → **カルテの「過去履歴・装置情報・契約」は CRM が正**。新規の現場報告だけ Forms で足す。
+- **AI は Copilot チャットのみ**（現時点）。AI Builder / Copilot Studio を
+  Power Automate から呼べるかは未確認 → **フロー内の自動要約は当面見送り**、§5の現実解で対応。
 - **入力/蓄積/自動化/閲覧**：Microsoft 365（Forms / SharePoint / Power Automate）。
+
+### データの出どころ（どこが正か）
+| データ | 出どころ（正） | 取り込み |
+|---|---|---|
+| 顧客・設置先 | Oracle CRM | DB直結（同期 or 直参照） |
+| 装置・型番・SN・設置場所 | Oracle CRM | DB直結 |
+| 契約・保守・次回点検 | Oracle CRM | DB直結 |
+| 過去の作業・対応履歴 | Oracle CRM | DB直結 |
+| **新規の現場報告（音声＋写真）** | **Microsoft Forms → SharePoint** | Power Automate |
+| **残務・頼まれごと** | Microsoft Forms → SharePoint | Power Automate |
+| 作業員（顔写真） | M365 / 人事 | Entra ID 等 |
+
+> ダッシュボードは **CRM（過去履歴・装置・契約）＋ SharePoint（新規報告・残務・写真）** を
+> 統合して1台のカルテとして表示する。過去はCRM、これからはForms、が一本の時系列で並ぶ。
 
 ```mermaid
 flowchart LR
-  subgraph CRM[Oracle CRM]
-    OR[(顧客・装置マスタ)]
+  subgraph CRM[Oracle CRM（DB直結・正データ）]
+    OR[(顧客・装置・契約\n過去の作業/対応履歴)]
   end
-  subgraph 集める
+  subgraph 集める[新規の現場入力]
     F1[作業報告フォーム\nMicrosoft Forms]
     F2[残務登録フォーム\nMicrosoft Forms]
   end
-  subgraph 貯める[SharePoint に構造的に蓄積]
-    L1[(作業報告リスト)]
+  subgraph 貯める[SharePoint に蓄積]
+    L1[(新規 作業報告)]
     L2[(残務リスト)]
     LIB[[写真ライブラリ\n装置ごとフォルダ]]
-    M1[(顧客/病院マスタ)]
-    M2[(装置マスタ)]
-    M3[(作業員マスタ)]
   end
   subgraph 整理[Power Automate]
     PA1{{回答→リスト転記\n写真をフォルダ移動}}
-    PA2{{AI要約 生成・保存\nAI Builder / Copilot Studio}}
   end
   subgraph 見る
-    D1[Mako ダッシュボード\nStreamlit / Web / Power BI]
+    D1[Mako ダッシュボード\nStreamlit / Power BI]
   end
 
-  OR -->|定期取込 or 参照| M1 & M2
   F1 --> PA1 --> L1
   F1 -->|写真| PA1 --> LIB
   F2 --> PA1 --> L2
-  L1 --> PA2 --> L1
-  M1 & M2 & M3 --> D1
+  OR -->|DB直結| D1
   L1 & L2 & LIB --> D1
 ```
 
@@ -100,18 +110,18 @@ Forms の質問項目は、下記リストの列に1対1で対応させます。
 | チーム | 1行テキスト | 画像診断チーム |
 | 顔写真 | 画像 / ハイパーリンク | （社員名簿の写真URL） |
 
-### 1-4. Oracle CRM からの取り込み
-顧客・装置マスタは Oracle CRM から取得（両社の社員が取得可能とのこと）。実装の選択肢：
+### 1-4. Oracle CRM の読み込み（DB直結）
+DB 直接接続が可能なので、**ダッシュボードから Oracle を直接読む（直参照）**を基本にする。
+顧客・装置・契約・過去履歴は CRM が常に正となり、二重管理が起きない。
 
-- **案ア（自動・推奨）**：Power Automate の **Oracle Database コネクタ**で CRM を定期取得し、
-  SharePoint の `Hospitals` / `Devices` リストへ upsert（1日1回など）。ダッシュボードは SharePoint を読む。
-- **案イ（手軽）**：現状「両社の社員ができる」CRM エクスポート（CSV等）を所定フォルダに置き、
-  Power Automate（または取込スクリプト）で SharePoint へ反映。まずはこれで開始も可。
-- **案ウ（直参照）**：ダッシュボード（Streamlit版）から Oracle を直接読む。CRM が常に正になるが、
-  DB 接続情報・権限管理が必要。
+- **実装**：Streamlit版で `python-oracledb` を使い、CRM のテーブルを SQL で取得。
+  雛形を **`app/data_oracle.py`** に用意（テーブル名・列名は実スキーマに合わせて差し替え）。
+  環境変数 `MAKO_SOURCE=oracle` で、サンプルJSONの代わりに Oracle を読む。
+- **性能・負荷が気になる場合**：CRM を1日数回 SharePoint / ローカルにキャッシュ同期して読む構成も可。
+  まずは直参照で始め、必要になったらキャッシュ層を足す。
 
-> 確認したい点：CRM から引ける具体的な項目（顧客・装置・型番・SN・設置場所・契約情報など）と、
-> 取得方法（Oracleへ直接接続できるのか／エクスポート運用か）。ここが決まると取り込み方式を確定できます。
+> 次に必要：CRM の**実テーブル名・列名**（顧客／装置／契約／作業履歴）。これがあれば
+> `data_oracle.py` の SQL を実物に合わせて完成できます。
 
 ---
 
@@ -210,29 +220,27 @@ Microsoft Forms の選択肢は**静的**で、装置マスタと自動連動し
 > よって「閲覧者のアカウントで都度生成する方式」は本番には使えない。
 > **要約は登録時に1回だけ生成して SharePoint に保存し、閲覧者は読むだけ**にする。
 
-### 案B（推奨・本番）：登録時に生成して SharePoint に保存
-- Power Automate（フロー①の最後）から**御社環境内の AI**を呼び、要約を生成して
-  `WorkReports.AI要約` 列／装置カルテ用のサマリーとして保存する。
-- **AI エンジン＝ Copilot Enterprise と同じテナントの Power Platform AI**：
-  - **AI Builder の「GPT でテキストを作成」／ カスタムプロンプト** … Power Automate から
-    直接呼べる。要約用のプロンプトを1つ作って渡すだけ。**第一候補**。
-  - **Copilot Studio** … 要約用エージェント/プロンプトを作り、フローから呼ぶ。
-  - いずれもキヤノン側テナント・データ境界内で動くため、外部API契約・キー管理が不要。
-    データが社外に出ない点も社内利用向き。
-- **メリット**：誰でもアカウント不要で同じ要約を閲覧できる。検索・印刷・PDF化も可能。
-- **プロンプト例（カルテ要約）**：「次は装置1台の基本情報・未対応の残務・作業履歴です。
-  次の担当者向けに【現状】【繰り返す事象・注意点】【未対応の残務】【次回の推奨アクション】
-  の4見出しで簡潔に要約。記録の事実のみ」＋（装置情報＋履歴のテキスト）。
-- **確認したい点**：AI Builder / Copilot Studio が Power Automate から使えるライセンス状況。
-  使えない場合は、Copilot Enterprise 側の別の呼び出し口を一緒に確認します。
+**現状の制約**：使える AI は **Copilot チャットのみ**。Copilot チャットは
+Power Automate から自動で呼べる API ではないため、**「登録時にフローで自動要約」は今はできない**。
+そこで、段階を踏む。
 
-### 案A（参考）：閲覧時にオンデマンド生成
-- 閲覧者自身の Claude アカウントで、その場で生成する方式。
-- 本番の社内閲覧には**不向き**（アカウントが要るため）。個人検証やアカウント保有者向けの限定用途のみ。
+### 段階1（今すぐ）：Copilot チャットで半自動生成 → 保存
+- 決まったプロンプトを用意し、カルテの履歴テキストを貼って Copilot チャットで要約 → 結果を
+  `WorkReports.AI要約` / カルテのサマリー欄に貼る（担当者またはコーディネーターが実施）。
+- **保存プロンプト（コピペ用）**：
+  > 次は医療機器1台の作業・対応履歴です。次の担当者が短時間で把握できるよう、
+  > 【現状】【繰り返す事象・注意点】【未対応の残務】【次回の推奨アクション】の4見出しで
+  > 各2〜4行、日本語で簡潔に要約してください。記録の事実のみ、推測はしないこと。
+- 閲覧者はアカウント不要で保存済みを読むだけ（試作 `web/index.html` はこの見え方）。
 
-> **試作の現状**：Web版（`web/index.html`）は、あらかじめ生成した要約をデータに埋め込んで
-> 表示している（＝案Bの見え方）。**開くだけで誰でも要約が読める**。
-> 本番では、この「埋め込み」を Power Automate の自動生成＋SharePoint保存に置き換える。
+### 段階2（自動化・要ライセンス確認）：フローで自動要約
+- **AI Builder（GPTプロンプト）** か **Copilot Studio** が Power Automate から使えれば、
+  段階1を自動化して登録時に要約を生成・保存できる（外部API不要・テナント内で完結）。
+- まず情報システム部門に「AI Builder / Copilot Studio を Power Automate から使えるか」を確認。
+  使えれば段階2へ、難しければ段階1の運用を続ける。
+
+> **まとめ**：要約の**見せ方（保存して誰でも閲覧）は確定**。**作り方**だけ、
+> 当面はCopilotチャットで半自動（段階1）→ ライセンス確認できたら自動化（段階2）。
 
 ---
 
@@ -240,9 +248,11 @@ Microsoft Forms の選択肢は**静的**で、装置マスタと自動連動し
 
 蓄積した SharePoint データを、いまの試作ダッシュボードにつなぐ。
 
-- **Streamlit版（`app/`）**：`app/data.py` の読み込み処理を、サンプルJSONから
-  **SharePoint リスト（Microsoft Graph API）取得**に差し替える。列名を対応させれば
-  画面はそのまま動く。写真は写真ライブラリのURLに差し替え。
+- **Streamlit版（`app/`）**：2つの源を統合して読む。
+  - **Oracle CRM（直結）**：`app/data_oracle.py`（雛形あり）の SQL を実スキーマに合わせ、
+    `MAKO_SOURCE=oracle` で顧客・装置・契約・過去履歴を取得。
+  - **SharePoint（新規報告・残務・写真）**：Microsoft Graph API で取得し、CRM 履歴と統合。
+  - どちらも `data.py` が期待する列名に合わせれば、画面はそのまま動く。
 - **Web版（`web/index.html`）**：社内公開する場合は、SharePoint から書き出した
   JSON を読む形にするか、SharePoint Framework(SPFx) Web パーツ化。
 - **手軽な代替**：SharePoint リストビュー / **Power BI** でも一覧・集計は可能。
@@ -252,12 +262,13 @@ Microsoft Forms の選択肢は**静的**で、装置マスタと自動連動し
 
 ## 7. 段階的な進め方（おすすめ順）
 
-1. **マスタ取り込み**：Oracle CRM から顧客・装置を SharePoint へ（§1-4／まずは案イの手動取込でも可）。作業員マスタも用意
-2. **作業報告フォーム**を作り、Power Automate で `WorkReports` へ転記（写真も）
+1. **Oracle 直結**：`app/data_oracle.py` の SQL を実スキーマに合わせ、CRM の顧客・装置・契約・過去履歴を表示（`MAKO_SOURCE=oracle`）
+2. **作業報告フォーム**＋ Power Automate で `WorkReports`（新規報告）へ転記（写真も）
 3. **残務フォーム**＋ `Tasks` 転記
-4. ダッシュボードを SharePoint 読み込みに接続（`app/data.py` 差し替え）
-5. **AI要約（案B）**：Power Automate＋AI Builder/Copilot Studio で登録時に生成し保存
-6. Oracle 取込を自動化（案ア）、規模拡大時は入力を **Power Apps** 化（動的ドロップダウン）
+4. ダッシュボードで **CRM履歴＋新規報告** を統合表示
+5. **AI要約 段階1**：Copilot チャット＋保存プロンプトで半自動生成し、サマリー欄に保存
+6. **AI要約 段階2**：AI Builder/Copilot Studio が使えるか確認 → 使えれば自動化
+7. 規模拡大時は入力を **Power Apps** 化（動的ドロップダウン）
 
 ---
 

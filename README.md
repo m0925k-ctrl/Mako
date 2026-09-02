@@ -63,12 +63,33 @@ SharePoint リストに差し替えるだけでダッシュボードは動きま
 写真と顔写真は試作ではプレースホルダーを自動生成しています
 （`app/photos.py`。実運用では SharePoint ドキュメントライブラリ等の実画像URLに差し替え）。
 
+## データ源の切り替え（サンプル / Oracle CRM）
+
+`app/data.py` は環境変数 `MAKO_SOURCE` で読み込み先を切り替えます。
+
+- `MAKO_SOURCE=sample`（既定）… `app/sample_data/*.json` を読む
+- `MAKO_SOURCE=oracle` … Oracle CRM に直結（`app/data_oracle.py`）
+
+Oracle 直結は雛形を用意済みです。`app/data_oracle.py` の SQL のテーブル名・列名を
+御社CRMの実スキーマに合わせ、接続情報を環境変数で渡すだけで、画面はそのまま動きます。
+
+```bash
+pip install oracledb
+export MAKO_ORACLE_USER=... MAKO_ORACLE_PASSWORD=... MAKO_ORACLE_DSN=host:1521/SERVICE
+MAKO_SOURCE=oracle streamlit run app/dashboard.py
+```
+
+顧客・装置・契約・過去履歴は CRM が正。新規の現場報告（音声＋写真）と残務は
+Microsoft Forms → SharePoint で足し、ダッシュボードで統合表示する想定です
+（詳細は [docs/forms-and-flow.md](docs/forms-and-flow.md)）。
+
 ## 構成
 
 ```
 app/
   dashboard.py        # Streamlit ダッシュボード本体
-  data.py             # データ読み込み＆項目定義（差し替えポイント）
+  data.py             # データ読み込み＆項目定義（源の切り替え）
+  data_oracle.py      # Oracle CRM 直結の雛形（SQLを実スキーマに差し替え）
   photos.py           # 写真・顔写真の表示（試作はプレースホルダー生成）
   sample_data/        # ダミーデータ（病院・装置・作業員・報告・残務）
 requirements.txt
