@@ -183,8 +183,75 @@
   .link-list .sub { font-size: 11px; color: var(--text-faint); }
   .link-list .arrow { color: var(--text-faint); font-size: 12px; }
 
+  /* マイリンクの追加ボタン・空状態・削除 */
+  .panel h3 { justify-content: space-between; }
+  .mini-btn {
+    margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid transparent; border-radius: 7px;
+    padding: 4px 9px; cursor: pointer; transition: background .12s;
+  }
+  .mini-btn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .empty-hint { padding: 14px 16px; color: var(--text-faint); font-size: 12.5px; line-height: 1.6; }
+  .link-list a .del {
+    color: var(--text-faint); font-size: 15px; padding: 2px 6px; border-radius: 6px; flex: 0 0 auto;
+  }
+  .link-list a .del:hover { color: var(--red); background: color-mix(in srgb, var(--red) 15%, transparent); }
+
   footer { max-width: 1400px; margin: 0 auto; padding: 8px 24px 40px; color: var(--text-faint); font-size: 11.5px; line-height: 1.7; }
   footer a { color: var(--text-dim); text-decoration: underline; }
+
+  /* ---------- 設定モーダル ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(4,7,12,.62); backdrop-filter: blur(3px);
+    display: grid; place-items: center; padding: 18px;
+    overscroll-behavior: contain;
+  }
+  .modal {
+    background: var(--bg-elev); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); overflow: hidden;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; border-bottom: 1px solid var(--border);
+  }
+  .modal-head h3 { margin: 0; font-size: 16px; }
+  .modal-body { padding: 6px 18px 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .settings-sec { padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .settings-sec:last-child { border-bottom: none; }
+  .settings-sec h4 { margin: 0 0 4px; font-size: 14px; }
+  .sec-desc { margin: 0 0 12px; font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
+  .sec-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.6; }
+
+  .edit-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .edit-list:empty { display: none; }
+  .edit-list li {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px;
+  }
+  .edit-list .info { flex: 1; min-width: 0; }
+  .edit-list .info .nm { font-size: 13px; font-weight: 600; }
+  .edit-list .info .u { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .edit-list .tag { font-size: 10px; font-weight: 700; color: var(--text-dim); background: var(--bg-hover); padding: 2px 7px; border-radius: 6px; }
+  .edit-list .rm {
+    background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 18px;
+    padding: 2px 8px; border-radius: 6px; flex: 0 0 auto;
+  }
+  .edit-list .rm:hover { color: var(--red); background: color-mix(in srgb, var(--red) 15%, transparent); }
+
+  .add-form { display: flex; flex-wrap: wrap; gap: 8px; }
+  .add-form input, .add-form select {
+    flex: 1 1 140px; min-width: 0; background: var(--bg-card); color: var(--text);
+    border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; font-size: 13px;
+    font-family: inherit;
+  }
+  .add-form input:focus, .add-form select:focus { outline: none; border-color: var(--accent); }
+  .add-form .add-btn {
+    flex: 0 0 auto; background: var(--accent); color: #fff; border: none; border-radius: 9px;
+    padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; transition: filter .12s;
+  }
+  .add-form .add-btn:hover { filter: brightness(1.08); }
 
   /* ---------- Mobile (Android / スマホ) ---------- */
   @media (max-width: 640px) {
@@ -216,6 +283,9 @@
     .items a { padding: 13px 16px; }
     .items .title { font-size: 14px; }
     .link-list a { padding: 12px 12px; }
+
+    .add-form input, .add-form select { flex-basis: 100%; }
+    .add-form .add-btn { flex: 1 1 100%; }
 
     footer { padding: 8px 14px 32px; }
   }
@@ -251,6 +321,12 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
       </svg>
     </button>
+    <button class="icon-btn" id="settings-btn" title="設定（リンク・フィード）" aria-label="設定">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -269,6 +345,12 @@
 
     <aside>
       <div class="panel">
+        <h3><span class="em">🔖</span> マイリンク
+          <button class="mini-btn" id="mylinks-add" title="リンクを追加">＋ 追加</button>
+        </h3>
+        <ul class="link-list" id="mylinks-list"></ul>
+      </div>
+      <div class="panel">
         <h3><span class="em">📈</span> マーケット & データ</h3>
         <ul class="link-list" id="market-list"></ul>
       </div>
@@ -281,6 +363,50 @@
         <ul class="link-list" id="framework-list"></ul>
       </div>
     </aside>
+  </div>
+</div>
+
+<!-- ========== 設定モーダル ========== -->
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h3 id="modal-title">⚙️ 設定</h3>
+      <button class="icon-btn" id="modal-close" aria-label="閉じる">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <section class="settings-sec">
+        <h4>🔖 マイリンク</h4>
+        <p class="sec-desc">よく見るページを登録すると、右側の「マイリンク」からワンタップで開けます。</p>
+        <ul class="edit-list" id="edit-links"></ul>
+        <div class="add-form">
+          <input type="text" id="link-name" placeholder="名前（例：自社ポータル）" autocomplete="off">
+          <input type="url" id="link-url" placeholder="URL（例：example.com）" autocomplete="off" inputmode="url">
+          <button class="add-btn" id="link-add">追加</button>
+        </div>
+      </section>
+
+      <section class="settings-sec">
+        <h4>📰 カスタムニュース（RSS）</h4>
+        <p class="sec-desc">お気に入りメディアの RSS フィード URL を登録すると、ニュース一覧にカードが追加されます。</p>
+        <ul class="edit-list" id="edit-feeds"></ul>
+        <div class="add-form">
+          <input type="text" id="feed-name" placeholder="名前（例：日経ビジネス）" autocomplete="off">
+          <input type="url" id="feed-url" placeholder="RSS の URL" autocomplete="off" inputmode="url">
+          <select id="feed-cat" aria-label="カテゴリ">
+            <option value="domestic">国内</option>
+            <option value="world">世界</option>
+            <option value="business" selected>ビジネス・経済</option>
+            <option value="tech">テクノロジー</option>
+          </select>
+          <button class="add-btn" id="feed-add">追加</button>
+        </div>
+        <p class="sec-hint">※ RSS の URL が分からない場合は「サイト名 RSS」で検索すると見つかります。取得できない場合はプロキシ制限の可能性があります。</p>
+      </section>
+
+    </div>
   </div>
 </div>
 
@@ -345,6 +471,34 @@ const PROXIES = [
   (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
   (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u),
 ];
+
+/* =========================================================
+   ユーザー設定（マイリンク・カスタムフィード）
+   端末のブラウザ（localStorage）に保存されます
+   ========================================================= */
+const LS_LINKS = "eb-links";
+const LS_FEEDS = "eb-feeds";
+
+function loadStore(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch (e) { return []; }
+}
+function saveStore(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+}
+
+let userLinks = loadStore(LS_LINKS);   // [{name, url}]
+let userFeeds = loadStore(LS_FEEDS);   // [{id, name, url, cat, home}]
+
+function normalizeUrl(raw) {
+  let u = (raw || "").trim();
+  if (!u) return "";
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try { new URL(u); return u; } catch (e) { return ""; }
+}
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } }
+
+/* 組み込み＋ユーザー追加のフィードを合成 */
+function getAllFeeds() { return FEEDS.concat(userFeeds); }
 
 /* =========================================================
    時計・あいさつ
@@ -486,8 +640,15 @@ async function loadFeed(feed) {
 async function loadAll() {
   const btn = document.getElementById("refresh-btn");
   btn.classList.add("spin");
-  await Promise.allSettled(FEEDS.map(loadFeed));
+  await Promise.allSettled(getAllFeeds().map(loadFeed));
   btn.classList.remove("spin");
+}
+
+/* フィードカードを描画し直して再読み込み（カスタム追加/削除後に呼ぶ） */
+function rebuildFeeds() {
+  document.getElementById("feed-grid").innerHTML = getAllFeeds().map(renderCard).join("");
+  applyFilter();
+  loadAll();
 }
 
 /* =========================================================
@@ -527,6 +688,109 @@ function renderSidebar() {
 }
 
 /* =========================================================
+   マイリンク & 設定モーダル
+   ========================================================= */
+function renderMyLinks() {
+  const el = document.getElementById("mylinks-list");
+  if (!userLinks.length) {
+    el.innerHTML = `<li class="empty-hint">まだ登録がありません。上の「＋ 追加」から、よく見るページの URL を登録できます。</li>`;
+    return;
+  }
+  el.innerHTML = userLinks.map((l, i) => `
+    <li><a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">
+      <span><div>${escapeHtml(l.name)}</div><div class="sub">${escapeHtml(hostOf(l.url))}</div></span>
+      <span class="del" data-i="${i}" title="削除" role="button">✕</span>
+    </a></li>`).join("");
+}
+
+function renderEditLists() {
+  document.getElementById("edit-links").innerHTML = userLinks.map((l, i) => `
+    <li><div class="info"><div class="nm">${escapeHtml(l.name)}</div><div class="u">${escapeHtml(l.url)}</div></div>
+      <button class="rm" data-type="link" data-i="${i}" aria-label="削除">✕</button></li>`).join("");
+  document.getElementById("edit-feeds").innerHTML = userFeeds.map((f) => `
+    <li><div class="info"><div class="nm">${escapeHtml(f.name)}</div><div class="u">${escapeHtml(f.url)}</div></div>
+      <span class="tag">${CATEGORIES[f.cat] || ""}</span>
+      <button class="rm" data-type="feed" data-id="${escapeHtml(f.id)}" aria-label="削除">✕</button></li>`).join("");
+}
+
+function addLink() {
+  const nameEl = document.getElementById("link-name");
+  const urlEl = document.getElementById("link-url");
+  const name = nameEl.value.trim();
+  const url = normalizeUrl(urlEl.value);
+  if (!name) { nameEl.focus(); return; }
+  if (!url) { urlEl.focus(); return; }
+  userLinks.push({ name, url });
+  saveStore(LS_LINKS, userLinks);
+  nameEl.value = ""; urlEl.value = ""; nameEl.focus();
+  renderEditLists(); renderMyLinks();
+}
+function removeLink(i) {
+  userLinks.splice(i, 1);
+  saveStore(LS_LINKS, userLinks);
+  renderEditLists(); renderMyLinks();
+}
+
+function addFeed() {
+  const nameEl = document.getElementById("feed-name");
+  const urlEl = document.getElementById("feed-url");
+  const name = nameEl.value.trim();
+  const url = normalizeUrl(urlEl.value);
+  const cat = document.getElementById("feed-cat").value;
+  if (!name) { nameEl.focus(); return; }
+  if (!url) { urlEl.focus(); return; }
+  userFeeds.push({ id: "custom-" + Date.now(), name, url, cat, home: url });
+  saveStore(LS_FEEDS, userFeeds);
+  nameEl.value = ""; urlEl.value = ""; nameEl.focus();
+  renderEditLists(); rebuildFeeds();
+}
+function removeFeed(id) {
+  userFeeds = userFeeds.filter((f) => f.id !== id);
+  saveStore(LS_FEEDS, userFeeds);
+  renderEditLists(); rebuildFeeds();
+}
+
+function openModal() {
+  renderEditLists();
+  document.getElementById("modal").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function closeModal() {
+  document.getElementById("modal").hidden = true;
+  document.body.style.overflow = "";
+}
+
+function setupSettings() {
+  document.getElementById("settings-btn").addEventListener("click", openModal);
+  document.getElementById("mylinks-add").addEventListener("click", openModal);
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal").addEventListener("click", (e) => {
+    if (e.target.id === "modal") closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.getElementById("modal").hidden) closeModal();
+  });
+
+  document.getElementById("link-add").addEventListener("click", addLink);
+  document.getElementById("feed-add").addEventListener("click", addFeed);
+  document.getElementById("link-url").addEventListener("keydown", (e) => { if (e.key === "Enter") addLink(); });
+  document.getElementById("feed-url").addEventListener("keydown", (e) => { if (e.key === "Enter") addFeed(); });
+
+  // マイリンクの削除（アンカー内の ✕）
+  document.getElementById("mylinks-list").addEventListener("click", (e) => {
+    const del = e.target.closest(".del");
+    if (del) { e.preventDefault(); e.stopPropagation(); removeLink(+del.dataset.i); }
+  });
+  // モーダル内リストの削除
+  document.querySelector(".modal-body").addEventListener("click", (e) => {
+    const rm = e.target.closest(".rm");
+    if (!rm) return;
+    if (rm.dataset.type === "link") removeLink(+rm.dataset.i);
+    else if (rm.dataset.type === "feed") removeFeed(rm.dataset.id);
+  });
+}
+
+/* =========================================================
    テーマ
    ========================================================= */
 function initTheme() {
@@ -556,14 +820,17 @@ function init() {
   document.getElementById("footer").innerHTML =
     `ニュースは各社の公開RSSフィードを、APIキー不要の公開CORSプロキシ（AllOrigins / corsproxy.io）経由で取得しています。` +
     `記事の著作権は各配信元に帰属します。取得できない場合は各カードの「サイトへ」から配信元をご確認ください。` +
+    `右上の ⚙️ から「マイリンク」や「カスタムニュース」を登録できます（この端末のブラウザに保存されます）。` +
     `<br>Executive Brief — 経営層を目指す社会人のための情報ダッシュボード.`;
 
   updateClock(); setInterval(updateClock, 1000 * 20);
   setGreeting();
   initTheme();
   renderSidebar();
+  renderMyLinks();
+  setupSettings();
   renderFilters();
-  document.getElementById("feed-grid").innerHTML = FEEDS.map(renderCard).join("");
+  document.getElementById("feed-grid").innerHTML = getAllFeeds().map(renderCard).join("");
   applyFilter();
   loadAll();
   document.getElementById("refresh-btn").addEventListener("click", loadAll);
