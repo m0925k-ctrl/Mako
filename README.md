@@ -21,11 +21,16 @@
 
 ## 主な機能
 
-- **ライブニュース** — 国内・世界・ビジネス経済・テクノロジーの主要メディアを RSS でリアルタイム取得
-  - 国内: NHK（主要／経済）、東洋経済オンライン、ITmedia ビジネス
-  - 世界: BBC World、The Guardian、CNBC
-  - ビジネス・経済: BBC Business、CNBC、NHK 経済、ITmedia、東洋経済
-  - テクノロジー: TechCrunch
+- **安定したニュース取得** — GitHub Actions が毎時 RSS を取得して `data/news.json` を生成し、
+  閲覧時はブラウザが同一オリジンのその JSON を読むだけ。CORS プロキシに依存しないため、
+  会社ネットワークなど制限環境でも安定して表示できます。
+- **カテゴリ**（世界 / 国内ビジネス / マーケット / テック・AI / 政治・政策 / 医療機器）
+  - 世界: Google ニュース(世界)、BBC World、The Guardian、Al Jazeera
+  - 国内ビジネス: Google ニュース(ビジネス)、NHK 経済、東洋経済オンライン、ITmedia ビジネス
+  - マーケット: Bloomberg Markets、Google ニュース(市場)
+  - テック・AI: Google ニュース(テクノロジー)、TechCrunch、The Verge、Ars Technica
+  - 政治・政策: Google ニュース(政治・政策)、NHK 政治、BBC Politics
+  - 医療機器: Google ニュース(医療機器)、MedTech Dive
 - **マイリンク** — 右上の ⚙️ 設定からよく見るページの URL を登録すると、サイドバーからワンタップで開けます
 - **カスタムニュース（RSS）** — お気に入りメディアの RSS フィード URL を登録すると、ニュース一覧にカードが追加されます
 - **カテゴリフィルタ** — すべて／国内／世界／ビジネス・経済／テクノロジーで絞り込み

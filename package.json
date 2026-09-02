@@ -1,0 +1,13 @@
+{
+  "name": "mako-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Executive Brief dashboard — server-side news fetcher",
+  "scripts": {
+    "fetch": "node scripts/fetch-news.mjs"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  }
+}

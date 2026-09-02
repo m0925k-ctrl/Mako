@@ -133,10 +133,12 @@
     padding: 14px 16px; border-bottom: 1px solid var(--border);
   }
   .src-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-  .cat-domestic { background: var(--red); }
   .cat-world    { background: var(--accent); }
-  .cat-business { background: var(--green); }
+  .cat-domestic { background: var(--red); }
+  .cat-markets  { background: var(--green); }
   .cat-tech     { background: var(--gold); }
+  .cat-policy   { background: #b98cf0; }
+  .cat-medtech  { background: #38c6d9; }
   .card-head .name { font-weight: 700; font-size: 14px; flex: 1; }
   .card-head .badge {
     font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
@@ -397,10 +399,12 @@
           <input type="text" id="feed-name" placeholder="名前（例：日経ビジネス）" autocomplete="off">
           <input type="url" id="feed-url" placeholder="RSS の URL" autocomplete="off" inputmode="url">
           <select id="feed-cat" aria-label="カテゴリ">
-            <option value="domestic">国内</option>
             <option value="world">世界</option>
-            <option value="business" selected>ビジネス・経済</option>
-            <option value="tech">テクノロジー</option>
+            <option value="domestic" selected>国内ビジネス</option>
+            <option value="markets">マーケット</option>
+            <option value="tech">テック・AI</option>
+            <option value="policy">政治・政策</option>
+            <option value="medtech">医療機器</option>
           </select>
           <button class="add-btn" id="feed-add">追加</button>
         </div>
@@ -418,23 +422,27 @@
    設定：ニュースフィード
    ========================================================= */
 const CATEGORIES = {
-  domestic: "国内",
   world:    "世界",
-  business: "ビジネス・経済",
-  tech:     "テクノロジー",
+  domestic: "国内ビジネス",
+  markets:  "マーケット",
+  tech:     "テック・AI",
+  policy:   "政治・政策",
+  medtech:  "医療機器",
 };
 
-const FEEDS = [
-  { id:"nhk-main",   name:"NHK 主要ニュース",       cat:"domestic", url:"https://www.nhk.or.jp/rss/news/cat0.xml",                       home:"https://www3.nhk.or.jp/news/" },
-  { id:"nhk-biz",    name:"NHK 経済",               cat:"business", url:"https://www.nhk.or.jp/rss/news/cat5.xml",                       home:"https://www3.nhk.or.jp/news/word/0000860.html" },
-  { id:"itmedia",    name:"ITmedia ビジネス",       cat:"business", url:"https://rss.itmedia.co.jp/rss/2.0/business.xml",                home:"https://www.itmedia.co.jp/business/" },
-  { id:"toyokeizai", name:"東洋経済オンライン",     cat:"business", url:"https://toyokeizai.net/list/feed/rss",                          home:"https://toyokeizai.net/" },
-  { id:"bbc-world",  name:"BBC World",              cat:"world",    url:"https://feeds.bbci.co.uk/news/world/rss.xml",                   home:"https://www.bbc.com/news/world" },
-  { id:"guardian",   name:"The Guardian · World",   cat:"world",    url:"https://www.theguardian.com/world/rss",                         home:"https://www.theguardian.com/world" },
-  { id:"cnbc",       name:"CNBC · Top News",        cat:"business", url:"https://www.cnbc.com/id/100003114/device/rss/rss.html",          home:"https://www.cnbc.com/world/" },
-  { id:"bbc-biz",    name:"BBC Business",           cat:"business", url:"https://feeds.bbci.co.uk/news/business/rss.xml",                home:"https://www.bbc.com/news/business" },
-  { id:"techcrunch", name:"TechCrunch",             cat:"tech",     url:"https://techcrunch.com/feed/",                                  home:"https://techcrunch.com/" },
+/* 情報源カタログは feeds.json（同一オリジン）から読み込みます。
+   万一読めない場合に備えた最小フォールバック（各カテゴリの Google ニュース）。 */
+const EMBEDDED_FALLBACK = [
+  { id:"gnews-world",   name:"Google ニュース · 世界",       cat:"world",    url:"https://news.google.com/rss/headlines/section/topic/WORLD?hl=ja&gl=JP&ceid=JP:ja",    home:"https://news.google.com/" },
+  { id:"gnews-biz",     name:"Google ニュース · ビジネス",   cat:"domestic", url:"https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ja&gl=JP&ceid=JP:ja", home:"https://news.google.com/" },
+  { id:"gnews-market",  name:"Google ニュース · 市場",       cat:"markets",  url:"https://news.google.com/rss/search?q=株式市場%20OR%20日経平均%20OR%20為替&hl=ja&gl=JP&ceid=JP:ja", home:"https://news.google.com/" },
+  { id:"gnews-tech",    name:"Google ニュース · テクノロジー", cat:"tech",   url:"https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ja&gl=JP&ceid=JP:ja", home:"https://news.google.com/" },
+  { id:"gnews-policy",  name:"Google ニュース · 政治・政策", cat:"policy",   url:"https://news.google.com/rss/search?q=政策%20OR%20規制%20OR%20国会&hl=ja&gl=JP&ceid=JP:ja", home:"https://news.google.com/" },
+  { id:"gnews-medtech", name:"Google ニュース · 医療機器",   cat:"medtech",  url:"https://news.google.com/rss/search?q=医療機器&hl=ja&gl=JP&ceid=JP:ja", home:"https://news.google.com/" },
 ];
+
+let FEEDS = EMBEDDED_FALLBACK;   // feeds.json 読み込み後に置き換え
+let NEWS = {};                   // data/news.json（事前取得済みニュース）
 
 const MARKETS = [
   { label:"日経平均 (Nikkei 225)", sub:"Google Finance", url:"https://www.google.com/finance/quote/NI225:INDEXNIKKEI" },
@@ -628,6 +636,12 @@ function escapeHtml(s) {
 }
 
 async function loadFeed(feed) {
+  // 1) サーバー側で事前取得済みのニュース（data/news.json）があれば即表示（プロキシ不要）
+  if (Array.isArray(NEWS[feed.id]) && NEWS[feed.id].length) {
+    renderItems(feed, NEWS[feed.id]);
+    return;
+  }
+  // 2) それ以外（ユーザー追加フィード、または当該回に取得失敗）はブラウザから直接取得を試みる
   document.getElementById("body-" + feed.id).innerHTML = skeleton();
   document.getElementById("upd-" + feed.id).textContent = "更新中…";
   try {
@@ -636,6 +650,34 @@ async function loadFeed(feed) {
   } catch (e) {
     renderError(feed);
   }
+}
+
+/* 情報源カタログ（feeds.json）とニュース本体（data/news.json）を同一オリジンから取得 */
+async function loadCatalog() {
+  try {
+    const res = await fetch("feeds.json?t=" + Date.now());
+    if (res.ok) {
+      const j = await res.json();
+      if (Array.isArray(j.feeds) && j.feeds.length) FEEDS = j.feeds;
+    }
+  } catch (e) { /* フォールバックを使用 */ }
+}
+async function loadNews() {
+  try {
+    const res = await fetch("data/news.json?t=" + Date.now());
+    if (res.ok) {
+      const j = await res.json();
+      NEWS = j.feeds || {};
+      updateSourceTime(j.generatedAt);
+    }
+  } catch (e) { /* news.json 無し → 各フィードをブラウザ側で取得 */ }
+}
+function updateSourceTime(iso) {
+  const el = document.getElementById("source-time");
+  if (!el || !iso) return;
+  const d = new Date(iso);
+  if (isNaN(d)) return;
+  el.textContent = "ニュース取得: " + d.toLocaleString("ja-JP", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 
 async function loadAll() {
@@ -817,11 +859,16 @@ function updateThemeIcon() {
 /* =========================================================
    初期化
    ========================================================= */
-function init() {
+async function refreshAll() {
+  await loadNews();   // 最新の事前取得ニュースを取り込む
+  await loadAll();    // カードを再描画
+}
+
+async function init() {
   document.getElementById("footer").innerHTML =
-    `ニュースは各社の公開RSSフィードを、APIキー不要の公開CORSプロキシ（AllOrigins / corsproxy.io）経由で取得しています。` +
-    `記事の著作権は各配信元に帰属します。取得できない場合は各カードの「サイトへ」から配信元をご確認ください。` +
-    `右上の ⚙️ から「マイリンク」や「カスタムニュース」を登録できます（この端末のブラウザに保存されます）。` +
+    `<span id="source-time"></span> ` +
+    `メインのニュースは GitHub 上で毎時自動取得し、同一サーバーのデータを表示しています（中継サービス不要）。` +
+    `記事の著作権は各配信元に帰属します。右上の ⚙️ から「マイリンク」や「カスタムニュース」も登録できます（この端末のブラウザに保存）。` +
     `<br>Executive Brief — 経営層を目指す社会人のための情報ダッシュボード.`;
 
   updateClock(); setInterval(updateClock, 1000 * 20);
@@ -831,11 +878,15 @@ function init() {
   renderMyLinks();
   setupSettings();
   renderFilters();
+
+  // 情報源カタログと事前取得ニュースを読み込んでから描画
+  await Promise.allSettled([loadCatalog(), loadNews()]);
   document.getElementById("feed-grid").innerHTML = getAllFeeds().map(renderCard).join("");
   applyFilter();
   loadAll();
-  document.getElementById("refresh-btn").addEventListener("click", loadAll);
-  setInterval(loadAll, 1000 * 60 * 10); // 10分ごとに自動更新
+
+  document.getElementById("refresh-btn").addEventListener("click", refreshAll);
+  setInterval(refreshAll, 1000 * 60 * 15); // 15分ごとに自動更新
 }
 document.addEventListener("DOMContentLoaded", init);
 </script>

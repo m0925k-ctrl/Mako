@@ -1,0 +1,28 @@
+{
+  "feeds": [
+    { "id": "gnews-world",    "name": "Google ニュース · 世界",         "cat": "world",    "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=ja&gl=JP&ceid=JP:ja",   "home": "https://news.google.com/" },
+    { "id": "bbc-world",      "name": "BBC World",                      "cat": "world",    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                                        "home": "https://www.bbc.com/news/world" },
+    { "id": "guardian-world", "name": "The Guardian · World",          "cat": "world",    "url": "https://www.theguardian.com/world/rss",                                              "home": "https://www.theguardian.com/world" },
+    { "id": "aljazeera",      "name": "Al Jazeera",                    "cat": "world",    "url": "https://www.aljazeera.com/xml/rss/all.xml",                                          "home": "https://www.aljazeera.com/" },
+
+    { "id": "gnews-biz",      "name": "Google ニュース · ビジネス",     "cat": "domestic", "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ja&gl=JP&ceid=JP:ja","home": "https://news.google.com/" },
+    { "id": "nhk-biz",        "name": "NHK 経済",                       "cat": "domestic", "url": "https://www.nhk.or.jp/rss/news/cat5.xml",                                            "home": "https://www3.nhk.or.jp/news/" },
+    { "id": "toyokeizai",     "name": "東洋経済オンライン",             "cat": "domestic", "url": "https://toyokeizai.net/list/feed/rss",                                               "home": "https://toyokeizai.net/" },
+    { "id": "itmedia-biz",    "name": "ITmedia ビジネス",              "cat": "domestic", "url": "https://rss.itmedia.co.jp/rss/2.0/business.xml",                                     "home": "https://www.itmedia.co.jp/business/" },
+
+    { "id": "bloomberg-mkt",  "name": "Bloomberg Markets",             "cat": "markets",  "url": "https://feeds.bloomberg.com/markets/news.rss",                                       "home": "https://www.bloomberg.com/markets" },
+    { "id": "gnews-market",   "name": "Google ニュース · 市場",         "cat": "markets",  "url": "https://news.google.com/rss/search?q=株式市場 OR 日経平均 OR 為替 OR 決算&hl=ja&gl=JP&ceid=JP:ja", "home": "https://news.google.com/" },
+
+    { "id": "gnews-tech",     "name": "Google ニュース · テクノロジー", "cat": "tech",     "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ja&gl=JP&ceid=JP:ja","home": "https://news.google.com/" },
+    { "id": "techcrunch",     "name": "TechCrunch",                    "cat": "tech",     "url": "https://techcrunch.com/feed/",                                                       "home": "https://techcrunch.com/" },
+    { "id": "theverge",       "name": "The Verge",                     "cat": "tech",     "url": "https://www.theverge.com/rss/index.xml",                                             "home": "https://www.theverge.com/" },
+    { "id": "arstechnica",    "name": "Ars Technica",                  "cat": "tech",     "url": "https://feeds.arstechnica.com/arstechnica/index",                                    "home": "https://arstechnica.com/" },
+
+    { "id": "gnews-policy",   "name": "Google ニュース · 政治・政策",   "cat": "policy",   "url": "https://news.google.com/rss/search?q=政策 OR 規制 OR 国会 OR 法改正&hl=ja&gl=JP&ceid=JP:ja", "home": "https://news.google.com/" },
+    { "id": "nhk-politics",   "name": "NHK 政治",                       "cat": "policy",   "url": "https://www.nhk.or.jp/rss/news/cat4.xml",                                            "home": "https://www3.nhk.or.jp/news/" },
+    { "id": "bbc-politics",   "name": "BBC Politics",                  "cat": "policy",   "url": "https://feeds.bbci.co.uk/news/politics/rss.xml",                                     "home": "https://www.bbc.com/news/politics" },
+
+    { "id": "gnews-medtech",  "name": "Google ニュース · 医療機器",     "cat": "medtech",  "url": "https://news.google.com/rss/search?q=医療機器&hl=ja&gl=JP&ceid=JP:ja",                "home": "https://news.google.com/" },
+    { "id": "medtechdive",    "name": "MedTech Dive",                  "cat": "medtech",  "url": "https://www.medtechdive.com/feeds/news/",                                            "home": "https://www.medtechdive.com/" }
+  ]
+}
