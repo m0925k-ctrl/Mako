@@ -115,6 +115,8 @@ Forms の質問項目・SharePoint のリスト設計・Power Automate フロー
 
 Copilot Studio が使える場合の設計（Teams で話して登録・聞いて把握・自動要約/通知）は
 **[docs/copilot-studio-design.md](docs/copilot-studio-design.md)** にまとめています（トライアル向け）。
+トライアルで実演するための**デモ台本**は **[docs/demo-script.md](docs/demo-script.md)**
+（セリフ・時間配分・Plan B・想定Q&A つき）。
 
 ## 今後
 
