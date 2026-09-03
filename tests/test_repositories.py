@@ -85,6 +85,29 @@ def test_access_fields_match_confirmed_schema():
     assert ACCESS_FIELDS["task_status"] == "タスクステータス"
 
 
+def test_case_ctsq_falls_back_when_unavailable(monkeypatch):
+    monkeypatch.setenv("MAKO_CASE_BACKEND", "ctsq")
+    monkeypatch.delenv("MAKO_STRICT_BACKEND", raising=False)
+    monkeypatch.delenv("MAKO_CTSQ_CONN", raising=False)
+    monkeypatch.delenv("MAKO_CTSQ_UID", raising=False)
+    monkeypatch.delenv("MAKO_CTSQ_PWD", raising=False)
+    assert isinstance(get_case_repository(), JsonCaseRepository)
+
+
+def test_config_acros_falls_back_when_unavailable(monkeypatch):
+    from app.repositories.configuration import (
+        JsonConfigurationRepository,
+        get_configuration_repository,
+    )
+
+    monkeypatch.setenv("MAKO_CONFIG_BACKEND", "acros")
+    monkeypatch.delenv("MAKO_STRICT_BACKEND", raising=False)
+    monkeypatch.delenv("MAKO_ACROS_CONN", raising=False)
+    monkeypatch.delenv("MAKO_ACROS_UID", raising=False)
+    monkeypatch.delenv("MAKO_ACROS_PWD", raising=False)
+    assert isinstance(get_configuration_repository(), JsonConfigurationRepository)
+
+
 def test_engineer_directory_json():
     from app.repositories.engineers import get_engineer_repository
 

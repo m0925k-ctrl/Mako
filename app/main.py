@@ -39,6 +39,9 @@ def health() -> dict:
         "backends": {
             "cases": store.case_repo.backend,
             "customers": store.customer_repo.backend,
+            "configuration": store.config_repo.backend,
+            "work_history": store.work_history_repo.backend,
+            "engineers": store.engineer_repo.backend,
         },
     }
 

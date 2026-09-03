@@ -13,6 +13,7 @@ from typing import Any
 
 from app.repositories import (
     get_case_repository,
+    get_configuration_repository,
     get_customer_repository,
     get_engineer_repository,
     get_work_history_repository,
@@ -46,6 +47,10 @@ class Store:
         self.customer_repo = get_customer_repository()  # 得意先
         self.work_history_repo = get_work_history_repository()  # 作業履歴(クエリ3)
         self.engineer_repo = get_engineer_repository()  # CE担当ディレクトリ
+        self.config_repo = get_configuration_repository()  # 構成一覧(ACROS)=インストールベース
+
+    def install_base(self, customer_full_id: str) -> list[dict]:
+        return self.config_repo.install_base(customer_full_id)
 
     # ---- ルックアップ ----------------------------------------------------
     def list_cases(self, limit: int = 500) -> list[dict]:

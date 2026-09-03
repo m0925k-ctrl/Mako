@@ -58,6 +58,45 @@ def cmd_peek(table: str) -> None:
         print("  ", r)
 
 
+def cmd_ctsq(case_id: str | None) -> None:
+    """CTSQ(INQ_TSC.CASE_ALL) に接続し、CASE_ID の全列(列名→値)をダンプする。"""
+    import os
+
+    os.environ["MAKO_STRICT_BACKEND"] = "1"
+    from app.repositories.cases import OracleCtsqCaseRepository
+
+    repo = OracleCtsqCaseRepository()
+    print("CTSQ 接続 OK")
+    if not case_id:
+        print("使い方: python scripts/check_odbc.py ctsq <CASE_ID>")
+        return
+    raw = repo.get_raw(case_id)
+    if raw is None:
+        print("該当なし:", case_id)
+        return
+    print(f"CASE_ALL 列一覧（{len(raw)}列）— これをケース形マッピングに使います:")
+    for name, val in raw.items():
+        print(f"  {name} = {val}")
+
+
+def cmd_acros(full_id: str | None) -> None:
+    """ACROS(構成一覧) に接続し、お客様ID(siteID-unitID)の有効構成を取得する。"""
+    import os
+
+    os.environ["MAKO_STRICT_BACKEND"] = "1"
+    from app.repositories.configuration import AcrosConfigurationRepository
+
+    repo = AcrosConfigurationRepository()
+    print("ACROS 接続 OK")
+    if not full_id:
+        print("使い方: python scripts/check_odbc.py acros <siteID-unitID>")
+        return
+    rows = repo.install_base(full_id)
+    print(f"構成一覧 {len(rows)} 件:")
+    for r in rows:
+        print("  ", r)
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args:
@@ -68,6 +107,10 @@ def main() -> None:
         cmd_drivers()
     elif cmd == "access":
         cmd_access(args[1] if len(args) > 1 else None)
+    elif cmd == "ctsq":
+        cmd_ctsq(args[1] if len(args) > 1 else None)
+    elif cmd == "acros":
+        cmd_acros(args[1] if len(args) > 1 else None)
     elif cmd == "peek" and len(args) > 1:
         cmd_peek(args[1])
     else:

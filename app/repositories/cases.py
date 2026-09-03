@@ -249,23 +249,130 @@ class AccessCaseRepository(CaseRepository):
 
 
 # --------------------------------------------------------------------------
+# CTSQ (CT-SQUARE) Oracle 実装 — 既存 VBA GetCaseData を移植
+# --------------------------------------------------------------------------
+# CASE_ALL の列名 → ケース形 の対応。実列名が判明したら env で上書き（未設定は無視）。
+#   例) MAKO_CTSQ_COL_CUSTOMER_NAME=得意先名
+CTSQ_TABLE = os.getenv("MAKO_CTSQ_TABLE", "INQ_TSC.CASE_ALL")
+CTSQ_CASE_ID_COL = os.getenv("MAKO_CTSQ_CASE_ID_COL", "CASE_ID")
+_CTSQ_COLS = {
+    "customer_name": os.getenv("MAKO_CTSQ_COL_CUSTOMER_NAME", ""),
+    "customer_id": os.getenv("MAKO_CTSQ_COL_CUSTOMER_ID", ""),
+    "site_id": os.getenv("MAKO_CTSQ_COL_SITE_ID", ""),     # 構成一覧結合用(11桁)
+    "unit_id": os.getenv("MAKO_CTSQ_COL_UNIT_ID", ""),     # 構成一覧結合用(3桁)
+    "model_code": os.getenv("MAKO_CTSQ_COL_MODEL_CODE", ""),
+    "serial": os.getenv("MAKO_CTSQ_COL_SERIAL", ""),
+    "modality": os.getenv("MAKO_CTSQ_COL_MODALITY", ""),
+    "symptom": os.getenv("MAKO_CTSQ_COL_SYMPTOM", ""),
+    "received_at": os.getenv("MAKO_CTSQ_COL_RECEIVED_AT", ""),
+    "sla_level": os.getenv("MAKO_CTSQ_COL_SLA", ""),
+    "service_center": os.getenv("MAKO_CTSQ_COL_SC", ""),
+    "error_code": os.getenv("MAKO_CTSQ_COL_ERROR", ""),
+}
+
+
+class OracleCtsqCaseRepository(CaseRepository):
+    """CTSQ(CT-SQUARE)の INQ_TSC.CASE_ALL を Oracle ODBC で読む。
+
+    VBA GetCaseData と同じく CASE_ID を 12 桁ゼロ埋めして 1 件取得する。
+    CASE_ALL の列名が未確定のため、取得した全列は _raw に保持し、
+    判明した列だけ env(MAKO_CTSQ_COL_*)でケース形へマッピングする。
+    """
+
+    backend = "ctsq"
+
+    def __init__(self) -> None:
+        from app.repositories.odbc import build_ctsq_conn_str, connect
+
+        self._conn_str = build_ctsq_conn_str()
+        self._connect = lambda: connect(self._conn_str)
+        self._connect().close()  # 接続確認
+
+    def get_raw(self, case_id: str) -> dict | None:
+        """CASE_ALL の 1 行を列名→値の生辞書で返す（VBA の CTSQ-DATA ダンプ相当）。"""
+        from app.repositories.odbc import rows_as_dicts
+        from app.repositories.transforms import pad_case_id
+
+        padded = pad_case_id(case_id)
+        sql = f"SELECT * FROM {CTSQ_TABLE} WHERE {CTSQ_CASE_ID_COL} = ? AND ROWNUM <= 1"
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(sql, [padded])
+            rows = rows_as_dicts(cur)
+        return rows[0] if rows else None
+
+    def _to_case(self, raw: dict, case_id: str) -> dict:
+        g = lambda key: raw.get(_CTSQ_COLS[key].lower()) if _CTSQ_COLS.get(key) else None
+        site = g("site_id")
+        unit = g("unit_id")
+        site_full = None
+        if site and unit:
+            from app.repositories.transforms import site_full_id
+            site_full = site_full_id(str(site), str(unit))
+        return {
+            "case_id": case_id,
+            "customer_id": g("customer_id") or "",
+            "customer_name": g("customer_name") or "",
+            "customer_equipment_id": g("serial") or "",
+            "modality": g("modality") or "",
+            "model": g("model_code") or "",
+            "model_code": g("model_code") or "",
+            "symptom": g("symptom") or "",
+            "error_code": g("error_code") or None,
+            "received_at": str(g("received_at") or ""),
+            "status": "",
+            "assignee": "",
+            "sla_level": g("sla_level") or "",
+            "service_center": g("service_center") or "",
+            "site_full_id": site_full,  # ACROS 構成一覧の結合キー
+            "hot_issue_site": False,
+            "next_inspection": None,
+            "remote_maintenance": {"available": False, "connection_status": "要確認", "last_alert": None, "connection_checked_at": None},
+            "dispatch": {"area": "", "fs_contact": "", "night_contact": None, "estimated_arrival": ""},
+            "install_base": [],   # 構成一覧(ACROS)から後段で結合
+            "work_history": [],   # 作業履歴ソースから後段で結合
+            "_raw": raw,          # 未マッピング列の確認用
+        }
+
+    def get(self, case_id: str) -> dict | None:
+        raw = self.get_raw(case_id)
+        return self._to_case(raw, case_id) if raw else None
+
+    def find_by_error(self, code: str) -> list[dict]:
+        # CASE_ALL 側のエラー列が未確定のため未対応（判明後に実装）
+        return []
+
+    def list_all(self, limit: int = 500) -> list[dict]:
+        # 全件一覧は受付一覧の専用クエリを用意してから対応（大量件数のため）
+        return []
+
+
+# --------------------------------------------------------------------------
 # ファクトリ
 # --------------------------------------------------------------------------
+_CASE_BACKENDS = {
+    "json": JsonCaseRepository,
+    "access": AccessCaseRepository,
+    "ctsq": OracleCtsqCaseRepository,
+}
+
+
 def get_case_repository() -> CaseRepository:
     backend = os.getenv("MAKO_CASE_BACKEND", "json").lower()
     strict = os.getenv("MAKO_STRICT_BACKEND", "0") == "1"
 
-    if backend == "access":
-        try:
-            return AccessCaseRepository()
-        except Exception as exc:
-            if strict:
-                raise
-            import logging
+    cls = _CASE_BACKENDS.get(backend)
+    if cls is None or backend == "json":
+        return JsonCaseRepository()
 
-            logging.getLogger(__name__).warning(
-                "Access バックエンド初期化に失敗したため JSON にフォールバックします: %s", exc
-            )
-            return JsonCaseRepository()
+    try:
+        return cls()
+    except Exception as exc:
+        if strict:
+            raise
+        import logging
 
-    return JsonCaseRepository()
+        logging.getLogger(__name__).warning(
+            "%s バックエンド初期化に失敗したため JSON にフォールバックします: %s", backend, exc
+        )
+        return JsonCaseRepository()

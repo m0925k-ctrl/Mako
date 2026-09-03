@@ -119,6 +119,26 @@
 | 得意先メモ | `customers.json`（追記は同ファイルへ書き戻し） | Oracle のメモテーブルへ INSERT（監査ログ付き） |
 | リモメン/アラート | `cases.json` 内 | リモートメンテナンス基盤の状態API |
 
+### 3.0 実データ接続マップ（既存 VBA から確認済み）
+
+現場で稼働している VBA（`GetCaseData` / `GetAcrosData` / `DataPutin`）から、実接続先が確定：
+
+| 用途 | 接続(ODBC/Oracle) | テーブル | キー・条件 | 実装 |
+|---|---|---|---|---|
+| 受付/ケース（CTSQ=CT-SQUARE） | DSN `CTSQ24`（DBQ `nas1033.world`） | `INQ_TSC.CASE_ALL` | `CASE_ID`（数値→**12桁ゼロ埋め**）, `ROWNUM<=1` | `OracleCtsqCaseRepository`（`MAKO_CASE_BACKEND=ctsq`） |
+| 構成一覧（ACROS=インストールベース） | DSN `NAS1001N02P_MS`（DBQ `NAS1001N02P.WORLD`） | `ACROS.構成一覧` | `お客様ID`=siteID(11)+"-"+unitID(3), `状態（ステータス）='有効'`, `勘定月='yyyy/MM'` | `AcrosConfigurationRepository`（`MAKO_CONFIG_BACKEND=acros`） |
+
+整形ロジック（`app/repositories/transforms.py`、VBA `DataPutin` 移植）：
+`pad_case_id`（12桁）, `derive_sc`（サービスセンタ名→SC、「沖メ」は例外）, `site_head7`, `site_full_id`。
+
+> **認証情報はリポジトリに保存しない**（環境変数 `MAKO_CTSQ_*` / `MAKO_ACROS_*` のみ）。
+> VBA に平文で埋まっているため、パスワードのローテーションを推奨。
+
+> **CASE_ALL / 構成一覧 の列名**：`SELECT *` で取得し、判明した列だけ `MAKO_CTSQ_COL_*` /
+> `MAKO_ACROS_COL_*` でケース形へマッピングする（未マッピング列は `_raw` に保持）。
+> 列名の確認は `python scripts/check_odbc.py ctsq <CASE_ID>`（CASE_ALL の全列ダンプ、
+> VBA の CTSQ-DATA シート相当）/ `... acros <siteID-unitID>`。
+
 ### 3.1 得意先情報の Oracle ODBC 連携（実装済み）
 
 現場で「顧客情報は Oracle から ODBC で取得できる」ため、得意先情報はバックエンドを

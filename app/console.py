@@ -74,6 +74,12 @@ def _assemble(case: dict) -> dict:
     # 作業履歴は独立ソース(クエリ3 相当)から取得。無ければケース埋め込みを使用。
     work_history = store.list_work_history(case["case_id"]) or case.get("work_history", [])
 
+    # インストールベースは構成一覧(ACROS)から。ケース埋め込みがあれば優先(デモ)。
+    install_base = case.get("install_base", [])
+    ib_key = case.get("site_full_id") or case.get("customer_equipment_id")
+    if not install_base and ib_key:
+        install_base = store.install_base(ib_key)
+
     # エラーコード別 過去交換部品(判定率) + 在庫を付与
     replacement_stats = []
     for stat in store.replacement_stats(error_code or ""):
@@ -115,7 +121,7 @@ def _assemble(case: dict) -> dict:
         "customer": customer,
         "error": err,
         "error_label": _error_label(case, err),
-        "install_base": case.get("install_base", []),
+        "install_base": install_base,
         "work_history": work_history,
         "nfits_history": nfits,
         "replacement_stats": replacement_stats,

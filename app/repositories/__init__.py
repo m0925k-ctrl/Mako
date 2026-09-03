@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from .cases import CaseRepository, get_case_repository
+from .configuration import ConfigurationRepository, get_configuration_repository
 from .customers import CustomerRepository, get_customer_repository
 from .engineers import EngineerRepository, get_engineer_repository
 from .work_history import WorkHistoryRepository, get_work_history_repository
@@ -19,4 +20,6 @@ __all__ = [
     "get_engineer_repository",
     "WorkHistoryRepository",
     "get_work_history_repository",
+    "ConfigurationRepository",
+    "get_configuration_repository",
 ]

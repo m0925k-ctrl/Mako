@@ -37,6 +37,43 @@ def build_access_conn_str() -> str:
     return f"DRIVER={{{ACCESS_DRIVER}}};DBQ={db};"
 
 
+def build_ctsq_conn_str() -> str:
+    """CTSQ(CT-SQUARE / INQ_TSC.CASE_ALL) の接続文字列。
+
+    既存 VBA: DSN=CTSQ24;DBQ=nas1033.world;UID=...;PWD=...
+    認証情報は環境変数から（リポジトリには保存しない）。
+    """
+    conn = os.getenv("MAKO_CTSQ_CONN")
+    if conn:
+        return conn
+    dsn = os.getenv("MAKO_CTSQ_DSN", "CTSQ24")
+    uid = os.getenv("MAKO_CTSQ_UID")
+    pwd = os.getenv("MAKO_CTSQ_PWD")
+    if not (uid and pwd):
+        raise RuntimeError("MAKO_CTSQ_CONN もしくは MAKO_CTSQ_UID/MAKO_CTSQ_PWD が未設定です")
+    dbq = os.getenv("MAKO_CTSQ_DBQ", "")
+    dbq_part = f"DBQ={dbq};" if dbq else ""
+    return f"DSN={dsn};{dbq_part}UID={uid};PWD={pwd};"
+
+
+def build_acros_conn_str() -> str:
+    """ACROS(構成一覧) の接続文字列。
+
+    既存 VBA: DSN=NAS1001N02P_MS;DBQ=NAS1001N02P.WORLD;UID=...;PWD=...
+    """
+    conn = os.getenv("MAKO_ACROS_CONN")
+    if conn:
+        return conn
+    dsn = os.getenv("MAKO_ACROS_DSN", "NAS1001N02P_MS")
+    uid = os.getenv("MAKO_ACROS_UID")
+    pwd = os.getenv("MAKO_ACROS_PWD")
+    if not (uid and pwd):
+        raise RuntimeError("MAKO_ACROS_CONN もしくは MAKO_ACROS_UID/MAKO_ACROS_PWD が未設定です")
+    dbq = os.getenv("MAKO_ACROS_DBQ", "")
+    dbq_part = f"DBQ={dbq};" if dbq else ""
+    return f"DSN={dsn};{dbq_part}UID={uid};PWD={pwd};"
+
+
 def build_oracle_conn_str() -> str:
     conn = os.getenv("MAKO_ORACLE_CONN")
     if conn:
