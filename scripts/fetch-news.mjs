@@ -13,6 +13,21 @@ const MAX_ITEMS = 8;
 const { feeds } = JSON.parse(readFileSync("feeds.json", "utf8"));
 const parser = new Parser({ timeout: TIMEOUT });
 
+// 記事の説明文から、プレーンな要約（最大140字）を作る
+function summarize(it) {
+  let s = it.contentSnippet || it.content || it.summary || it["content:encoded"] || it.description || "";
+  s = String(s)
+    .replace(/<[^>]*>/g, " ")                 // HTMLタグ除去
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (s.length > 140) s = s.slice(0, 140).trim() + "…";
+  return s;
+}
+
 async function fetchOne(feed) {
   const res = await fetch(encodeURI(feed.url), {
     headers: {
@@ -30,6 +45,7 @@ async function fetchOne(feed) {
       title: (it.title || "").trim(),
       link: it.link || it.guid || "#",
       date: it.isoDate || it.pubDate || "",
+      summary: summarize(it),
     }))
     .filter((x) => x.title)
     .slice(0, MAX_ITEMS);
