@@ -19,8 +19,10 @@ Option Explicit
 ' パスワードはリポジトリに残さないため <SET_PASSWORD> のままにしています。
 ' =============================================================================
 
-' ---- 設定：作業履歴 DB（ODBC） -------------------------------------------------
+' ---- 設定：作業履歴 DB（ODBC / バックエンド = ACROS EUC 想定） ------------------
 ' 既存の CTSQ / ACROS と同じく ADODB + ODBC で取得します。
+' 作業履歴の実体は社内サーバーの "ACROS EUC" データベースを想定。DSN・表名・列名を
+' 実環境に合わせて設定してください（DSN 文字列は分かり次第このプレースホルダを置換）。
 Private Const WH_CONNECTION As String = _
     "DSN=<WORKHIST_DSN>;DBQ=<WORKHIST_DBQ>;UID=<WORKHIST_UID>;PWD=<SET_PASSWORD>;"
 
