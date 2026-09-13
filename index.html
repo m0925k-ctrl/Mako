@@ -148,10 +148,18 @@
   .items li { border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
   .items li:last-child { border-bottom: none; }
   .items a {
-    display: block; padding: 11px 16px;
+    display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px;
     transition: background .12s; position: relative;
   }
   .items a:hover { background: var(--bg-hover); }
+  .items .txt { flex: 1 1 auto; min-width: 0; }
+  .items .thumb {
+    flex: 0 0 auto; width: 76px; height: 76px; border-radius: 9px; overflow: hidden;
+    position: relative; background: var(--bg-hover);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  }
+  .items .thumb .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 26px; opacity: .55; }
+  .items .thumb .thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
   .items .title { font-size: 13.5px; line-height: 1.5; margin: 0; font-weight: 600; }
   .items a:hover .title { color: var(--accent); }
   .items .summary {
@@ -434,6 +442,11 @@ const CATEGORIES = {
   medtech:  "医療機器",
 };
 
+// 画像が無い記事のアイコンタイル用（カテゴリ別絵文字）
+const CAT_EMOJI = {
+  world: "🌏", domestic: "🏢", markets: "📈", tech: "💻", policy: "🏛", medtech: "🩺",
+};
+
 /* 情報源カタログは feeds.json（同一オリジン）から読み込みます。
    万一読めない場合に備えた最小フォールバック（各カテゴリの Google ニュース）。 */
 const EMBEDDED_FALLBACK = [
@@ -569,7 +582,7 @@ async function fetchFeedItems(url) {
       const j = await res.json();
       if (j && j.status === "ok" && Array.isArray(j.items)) {
         return j.items
-          .map((it) => ({ title: (it.title || "").trim(), link: it.link || "#", date: it.pubDate || "", summary: cleanSummary(it.description || it.content || "") }))
+          .map((it) => ({ title: (it.title || "").trim(), link: it.link || "#", date: it.pubDate || "", summary: cleanSummary(it.description || it.content || ""), image: (it.thumbnail || (it.enclosure && it.enclosure.link) || "").replace(/^http:\/\//, "https://") }))
           .filter((x) => x.title);
       }
     }
@@ -606,7 +619,16 @@ function parseFeed(xmlText) {
     }
     const date = text("pubDate") || text("published") || text("updated") || text("date") || "";
     const desc = text("description") || text("summary") || text("content") || "";
-    return { title: text("title"), link: link || "#", date, summary: cleanSummary(desc) };
+    // 画像URL: media:thumbnail / media:content / enclosure / 本文の<img>
+    const attr = (tag) => n.getElementsByTagName(tag)[0]?.getAttribute("url") || "";
+    let image = attr("media:thumbnail") || attr("media:content") || "";
+    if (!image) {
+      const enc = n.getElementsByTagName("enclosure")[0];
+      if (enc && /^image\//i.test(enc.getAttribute("type") || "image/")) image = enc.getAttribute("url") || "";
+    }
+    if (!image) { const m = desc.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) image = m[1]; }
+    if (image && image.startsWith("http://")) image = "https://" + image.slice(7);
+    return { title: text("title"), link: link || "#", date, summary: cleanSummary(desc), image: /^https:\/\//.test(image) ? image : "" };
   }).filter((it) => it.title);
 }
 
@@ -653,11 +675,15 @@ function renderItems(feed, items) {
     upd.textContent = "";
     return;
   }
+  const emoji = CAT_EMOJI[feed.cat] || "📰";
   const rows = items.slice(0, 6).map((it) => `
     <li><a href="${it.link}" target="_blank" rel="noopener">
-      <p class="title">${escapeHtml(it.title)}</p>
-      ${it.summary ? `<p class="summary">${escapeHtml(it.summary)}</p>` : ""}
-      <div class="meta">${relativeTime(it.date)}</div>
+      <div class="txt">
+        <p class="title">${escapeHtml(it.title)}</p>
+        ${it.summary ? `<p class="summary">${escapeHtml(it.summary)}</p>` : ""}
+        <div class="meta">${relativeTime(it.date)}</div>
+      </div>
+      <span class="thumb"><span class="ph">${emoji}</span>${it.image ? `<img class="thumb-img" src="${escapeHtml(it.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</span>
     </a></li>`).join("");
   body.innerHTML = `<ul class="items">${rows}</ul>`;
   upd.textContent = "更新 " + new Date().toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });

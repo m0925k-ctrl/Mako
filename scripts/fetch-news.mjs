@@ -13,9 +13,50 @@ const TCACHE_PATH = "data/translations.json";
 const MAX_NEW_TRANSLATIONS = 250; // 1回の実行で新規翻訳する上限（無料枠保護）
 
 const { feeds } = JSON.parse(readFileSync("feeds.json", "utf8"));
-const parser = new Parser({ timeout: TIMEOUT });
+const parser = new Parser({
+  timeout: TIMEOUT,
+  customFields: {
+    item: [
+      ["media:thumbnail", "mediaThumb"],
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["content:encoded", "contentEncoded"],
+    ],
+  },
+});
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 記事から代表画像URLを取り出す（media:thumbnail → media:content → enclosure → 本文の<img>）
+function pickImage(it) {
+  const norm = (u) => {
+    if (!u) return "";
+    u = String(u).trim();
+    if (u.startsWith("//")) u = "https:" + u;
+    if (u.startsWith("http://")) u = "https://" + u.slice(7);
+    return /^https:\/\//.test(u) ? u : "";
+  };
+  // media:thumbnail
+  let u = norm(it.mediaThumb && it.mediaThumb.$ && it.mediaThumb.$.url);
+  if (u) return u;
+  // media:content（画像タイプ優先）
+  if (Array.isArray(it.mediaContent)) {
+    const imgs = it.mediaContent
+      .map((m) => (m && m.$ ? m.$ : {}))
+      .filter((a) => a.url && (!a.medium || a.medium === "image") && (!a.type || /^image\//.test(a.type)));
+    u = norm((imgs[0] || {}).url);
+    if (u) return u;
+  }
+  // enclosure（画像）
+  if (it.enclosure && it.enclosure.url && (!it.enclosure.type || /^image\//.test(it.enclosure.type))) {
+    u = norm(it.enclosure.url);
+    if (u) return u;
+  }
+  // 本文HTML内の最初の <img src>
+  const html = it.contentEncoded || it.content || it.summary || it.description || "";
+  const m = String(html).match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (m) { u = norm(m[1]); if (u) return u; }
+  return "";
+}
 
 // 翻訳キャッシュ（原文→日本語）を読み込み。毎時の無料枠を節約するため永続化する。
 let tcache = {};
@@ -82,6 +123,7 @@ async function fetchOne(feed) {
       link: it.link || it.guid || "#",
       date: it.isoDate || it.pubDate || "",
       summary: summarize(it),
+      image: pickImage(it),
     }))
     .filter((x) => x.title)
     .slice(0, MAX_ITEMS);
